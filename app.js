@@ -7,8 +7,8 @@
 
 // ── Constants ──────────────────────────────────────────────
 const API_BASE = 'https://api.atlasacademy.io';
-const PACK_COOLDOWN_MS = 0 * 30 * 60 * 60 * 1000; // 5 days
-const CARDS_PER_PACK = 3;
+const PACK_COOLDOWN_MS = 30 * 60 * 1000; // Alterado para 30 minutos
+const CARDS_PER_PACK = 5;
 const SAVE_KEY = 'fgo_album_save';
 
 // Rarity weights (higher rarity = harder to get)
@@ -121,27 +121,6 @@ function loadSave() {
   } catch (e) {
     console.warn('Could not load save:', e);
   }
-}
-
-function persistSave() {
-  const data = {
-    obtained: state.obtained,
-    lastPackTime: state.lastPackTime,
-    packHistory: state.packHistory,
-    savedAt: Date.now(),
-    version: '1.0',
-  };
-  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-}
-
-function buildSaveObject() {
-  return {
-    obtained: state.obtained,
-    lastPackTime: state.lastPackTime,
-    packHistory: state.packHistory,
-    savedAt: Date.now(),
-    version: '1.0',
-  };
 }
 
 // ── UI Init ────────────────────────────────────────────────
@@ -637,6 +616,21 @@ function exportSave() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('Save exportado com sucesso! 📥', 'success');
+}
+
+function buildSaveObject() {
+  return {
+    obtained: state.obtained,
+    lastPackTime: state.lastPackTime,
+    packHistory: state.packHistory,
+    savedAt: Date.now(),
+    version: '1.0',
+  };
+}
+
+function persistSave() {
+  const data = buildSaveObject();
+  localStorage.setItem(SAVE_KEY, JSON.stringify(data));
 }
 
 function importSave(e) {
