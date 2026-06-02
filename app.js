@@ -66,11 +66,11 @@ async function fetchServants() {
   const loadText = document.getElementById('loading-text');
 
   try {
-    loadText.textContent = 'Buscando servants do JP com nomes NA...';
+    loadText.textContent = 'Buscando todos os servants do JP (com nomes traduzidos)...';
     loadFill.style.width = '20%';
 
-    // Use JP servant list but with NA (English) names via the nice/servant endpoint
-    const res = await fetch(`${API_BASE}/export/NA/basic_servant.json`);
+    // Mudado para o endpoint do JP. A Atlas Academy traz os nomes em inglês por padrão aqui.
+    const res = await fetch(`${API_BASE}/export/JP/basic_servant.json`);
     loadFill.style.width = '60%';
 
     if (!res.ok) throw new Error('Falha na resposta da API');
@@ -94,7 +94,7 @@ async function fetchServants() {
       .sort((a, b) => a.collectionNo - b.collectionNo);
 
     loadFill.style.width = '100%';
-    loadText.textContent = `${state.servants.length} servants carregados!`;
+    loadText.textContent = `${state.servants.length} servants carregados com sucesso!`;
 
     await sleep(600);
     document.getElementById('loading-screen').style.display = 'none';
@@ -317,11 +317,11 @@ function showModal(servant) {
   modal.style.display = 'flex';
 }
 
+// ── Pack Timer ─────────────────────────────────────────────
 function closeModal() {
   document.getElementById('servant-modal').style.display = 'none';
 }
 
-// ── Pack Timer ─────────────────────────────────────────────
 function startPackTimer() {
   updatePackUI();
   setInterval(updatePackUI, 1000);
