@@ -1,1457 +1,163 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fate · Editor de Álbum</title>
-
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com"></script>
-
-<!-- JSZip -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
-
-<script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        fontFamily: {
-          display: ['Cinzel', 'serif'],
-          body: ['Crimson Pro', 'Georgia', 'serif'],
-        },
-        colors: {
-          obsidian: { 900: '#0a0a0f', 800: '#12121a', 700: '#1a1a28', 600: '#242436' },
-          gold: { 300: '#f5dfa0', 400: '#e8c840', 500: '#c9a227', 600: '#9b7a1a' },
-          crimson: { 400: '#e85555', 500: '#c93333', 600: '#a01f1f' },
-        },
-      }
-    }
-  }
-</script>
-
-<style>
-  :root {
-    --gold: #c9a227;
-    --gold-light: #e8c840;
-    --gold-glow: rgba(201,162,39,0.25);
-    --crimson: #c93333;
-    --obsidian: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a28;
-    --surface3: #242436;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    font-family: 'Crimson Pro', Georgia, serif;
-    background: var(--obsidian);
-    color: #d4c9b0;
-    overflow: hidden;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    user-select: none;
-  }
-
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--surface); }
-  ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
-
-  /* ── Header ── */
-  #header {
-    background: linear-gradient(135deg, #0e0e18 0%, #1a1020 50%, #0e0e18 100%);
-    border-bottom: 1px solid rgba(201,162,39,0.3);
-    box-shadow: 0 2px 20px rgba(0,0,0,0.5);
-    flex-shrink: 0;
-  }
-
-  .logo-text {
-    font-family: 'Cinzel', serif;
-    font-weight: 900;
-    letter-spacing: 0.15em;
-    background: linear-gradient(135deg, #f5dfa0, #c9a227, #e8c840);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: none;
-  }
-
-  /* ── Sidebar ── */
-  #sidebar {
-    background: linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%);
-    border-right: 1px solid rgba(201,162,39,0.15);
-    width: 280px;
-    flex-shrink: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .sidebar-section {
-    border-bottom: 1px solid rgba(201,162,39,0.1);
-    padding: 16px;
-  }
-
-  .sidebar-label {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--gold);
-    opacity: 0.7;
-    margin-bottom: 10px;
-  }
-
-  /* ── Buttons ── */
-  .btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-family: 'Cinzel', serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    border-radius: 4px;
-    padding: 8px 14px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: none;
-    width: 100%;
-  }
-
-  .btn-gold {
-    background: linear-gradient(135deg, #9b7a1a, #c9a227, #e8c840);
-    color: #0a0a0f;
-    font-weight: 700;
-    box-shadow: 0 2px 12px rgba(201,162,39,0.3);
-  }
-  .btn-gold:hover { box-shadow: 0 4px 20px rgba(201,162,39,0.5); transform: translateY(-1px); }
-  .btn-gold:active { transform: translateY(0); }
-
-  .btn-ghost {
-    background: transparent;
-    border: 1px solid rgba(201,162,39,0.3);
-    color: #c9a227;
-  }
-  .btn-ghost:hover { background: rgba(201,162,39,0.1); border-color: rgba(201,162,39,0.6); }
-
-  .btn-danger {
-    background: transparent;
-    border: 1px solid rgba(201,51,51,0.4);
-    color: #e85555;
-  }
-  .btn-danger:hover { background: rgba(201,51,51,0.15); }
-
-  .btn-sm { padding: 5px 10px; font-size: 0.55rem; }
-
-  /* ── Navigation ── */
-  .nav-area {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .nav-btn {
-    width: 34px;
-    height: 34px;
-    border-radius: 4px;
-    background: transparent;
-    border: 1px solid rgba(201,162,39,0.3);
-    color: var(--gold);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    flex-shrink: 0;
-    font-size: 16px;
-  }
-  .nav-btn:hover:not(:disabled) { background: rgba(201,162,39,0.15); border-color: var(--gold); }
-  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-  #pageIndicator {
-    flex: 1;
-    text-align: center;
-    font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
-    color: #d4c9b0;
-    padding: 6px 8px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    border: 1px solid rgba(255,255,255,0.05);
-  }
-
-  /* ── Sticker thumbnails ── */
-  #stickerList {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    max-height: 320px;
-    overflow-y: auto;
-  }
-
-  .sticker-thumb {
-    aspect-ratio: 1;
-    border-radius: 4px;
-    overflow: hidden;
-    border: 2px solid transparent;
-    cursor: pointer;
-    background: rgba(0,0,0,0.4);
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  .sticker-thumb:hover { border-color: var(--gold); transform: scale(1.05); }
-  .sticker-thumb img { width: 100%; height: 100%; object-fit: contain; }
-  .sticker-thumb .sticker-del {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 16px;
-    height: 16px;
-    background: rgba(201,51,51,0.9);
-    border-radius: 50%;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    color: white;
-    cursor: pointer;
-    z-index: 10;
-  }
-  .sticker-thumb:hover .sticker-del { display: flex; }
-
-  /* ── Canvas Area ── */
-  #workspace {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    background: radial-gradient(ellipse at center, #1a1520 0%, var(--obsidian) 70%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #albumContainer {
-    position: relative;
-    box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 20px rgba(201,162,39,0.1);
-    border: 1px solid rgba(201,162,39,0.2);
-    overflow: hidden;
-    background: #111;
-    cursor: default;
-  }
-
-  #albumPage {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-  }
-
-  /* ── Sticker on canvas ── */
-  .placed-sticker {
-    position: absolute;
-    cursor: move;
-    touch-action: none;
-  }
-
-  .placed-sticker img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    pointer-events: none;
-    display: block;
-  }
-
-  .placed-sticker.selected .sticker-frame {
-    outline: 2px solid var(--gold-light);
-    box-shadow: 0 0 0 1px rgba(232,200,64,0.5), 0 0 15px rgba(201,162,39,0.4);
-  }
-
-  .sticker-frame {
-    width: 100%;
-    height: 100%;
-    position: relative;
-  }
-
-  /* Resize handles */
-  .resize-handle {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: var(--gold);
-    border: 1px solid #0a0a0f;
-    border-radius: 2px;
-    display: none;
-    z-index: 100;
-  }
-  .placed-sticker.selected .resize-handle { display: block; }
-
-  .resize-handle.se { bottom: -5px; right: -5px; cursor: se-resize; }
-  .resize-handle.sw { bottom: -5px; left: -5px; cursor: sw-resize; }
-  .resize-handle.ne { top: -5px; right: -5px; cursor: ne-resize; }
-  .resize-handle.nw { top: -5px; left: -5px; cursor: nw-resize; }
-
-  /* Rotate handle */
-  .rotate-handle {
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    background: #4a9eff;
-    border-radius: 50%;
-    border: 1px solid #0a0a0f;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    cursor: grab;
-    display: none;
-    z-index: 100;
-  }
-  .placed-sticker.selected .rotate-handle { display: block; }
-
-  /* Delete handle */
-  .delete-handle {
-    position: absolute;
-    width: 14px;
-    height: 14px;
-    background: var(--crimson);
-    border-radius: 50%;
-    border: 1px solid #0a0a0f;
-    top: -5px;
-    right: -5px;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    color: white;
-    z-index: 101;
-  }
-  .placed-sticker.selected .delete-handle { display: flex; }
-
-  /* ── Spinner ── */
-  .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(201,162,39,0.2);
-    border-top-color: var(--gold);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Toast ── */
-  #toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: var(--surface3);
-    border: 1px solid var(--gold);
-    color: #f5dfa0;
-    font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    padding: 10px 20px;
-    border-radius: 4px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    transition: transform 0.3s ease;
-    z-index: 9999;
-    white-space: nowrap;
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ── Loading overlay ── */
-  #loadingOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(10,10,15,0.95);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-  }
-
-  #loadingOverlay h1 {
-    font-family: 'Cinzel', serif;
-    font-size: 2rem;
-    font-weight: 900;
-    background: linear-gradient(135deg, #f5dfa0, #c9a227, #e8c840);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: 0.3em;
-  }
-
-  #loadingOverlay p {
-    color: rgba(212,201,176,0.6);
-    font-size: 0.85rem;
-    letter-spacing: 0.1em;
-  }
-
-  /* ── Ornamental lines ── */
-  .ornament {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 4px;
-  }
-  .ornament::before, .ornament::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(201,162,39,0.4), transparent);
-  }
-  .ornament span {
-    color: var(--gold);
-    font-size: 8px;
-    opacity: 0.6;
-  }
-
-  /* ── Zoom controls ── */
-  #zoomControl {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 8px;
-  }
-  .zoom-btn {
-    width: 26px;
-    height: 26px;
-    border-radius: 3px;
-    background: transparent;
-    border: 1px solid rgba(201,162,39,0.3);
-    color: var(--gold);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.15s;
-    flex-shrink: 0;
-  }
-  .zoom-btn:hover { background: rgba(201,162,39,0.15); }
-  #zoomLabel {
-    flex: 1;
-    text-align: center;
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    color: rgba(212,201,176,0.6);
-  }
-
-  /* ── Page grid ── */
-  #pageGrid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-    max-height: 200px;
-    overflow-y: auto;
-    margin-top: 8px;
-  }
-
-  .page-thumb {
-    aspect-ratio: 0.7;
-    border-radius: 2px;
-    overflow: hidden;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.15s;
-    background: rgba(0,0,0,0.4);
-  }
-  .page-thumb:hover { border-color: rgba(201,162,39,0.5); }
-  .page-thumb.active { border-color: var(--gold); box-shadow: 0 0 8px rgba(201,162,39,0.4); }
-  .page-thumb img { width: 100%; height: 100%; object-fit: cover; }
-
-  /* ── Properties panel ── */
-  #propsPanel {
-    background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    padding: 10px;
-    border: 1px solid rgba(201,162,39,0.1);
-    margin-top: 8px;
-  }
-
-  .prop-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .prop-label {
-    font-size: 0.6rem;
-    color: rgba(212,201,176,0.5);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    width: 28px;
-    flex-shrink: 0;
-  }
-
-  .prop-slider {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 3px;
-    background: rgba(201,162,39,0.2);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-  }
-  .prop-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: var(--gold);
-    border-radius: 50%;
-    cursor: grab;
-  }
-
-  .prop-val {
-    font-size: 0.6rem;
-    color: rgba(212,201,176,0.6);
-    width: 32px;
-    text-align: right;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FGO — Álbum de Figurinhas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Background particles -->
+  <canvas id="bg-canvas"></canvas>
 
-<!-- Loading overlay -->
-<div id="loadingOverlay">
-  <h1>FATE</h1>
-  <div class="spinner"></div>
-  <p id="loadingMsg">Carregando páginas do álbum...</p>
-</div>
-
-<!-- Header -->
-<div id="header" class="flex items-center px-5 py-3 gap-6">
-  <div class="flex items-center gap-3">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#c9a227" stroke-width="1.5"/>
-      <path d="M2 17L12 22L22 17" stroke="#c9a227" stroke-width="1.5"/>
-      <path d="M2 12L12 17L22 12" stroke="#e8c840" stroke-width="1" opacity="0.6"/>
-    </svg>
-    <span class="logo-text text-xl tracking-widest">FATE</span>
-    <span class="text-xs text-gold-600 opacity-50 ml-1" style="font-family:'Crimson Pro',serif">· Editor de Álbum</span>
-  </div>
-
-  <div class="flex-1"></div>
-
-  <!-- Header actions -->
-  <div class="flex items-center gap-2">
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('zipImport').click()" title="Importar projeto salvo">
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Importar Projeto
-    </button>
-    <button class="btn btn-gold btn-sm" onclick="exportZip()">
-      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Exportar Álbum
-    </button>
-  </div>
-</div>
-
-<!-- Main layout -->
-<div style="flex:1;display:flex;overflow:hidden;">
-
-  <!-- Sidebar -->
-  <div id="sidebar">
-
-    <!-- Navigation -->
-    <div class="sidebar-section">
-      <div class="sidebar-label">Navegação</div>
-      <div class="nav-area">
-        <button class="nav-btn" id="prevBtn" onclick="changePage(-1)" title="Página anterior">&#8592;</button>
-        <div id="pageIndicator">— / —</div>
-        <button class="nav-btn" id="nextBtn" onclick="changePage(1)" title="Próxima página">&#8594;</button>
+  <!-- Header -->
+  <header id="site-header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <span class="logo-icon">⚜</span>
+        <div class="logo-text">
+          <h1>Fate/Grand Order</h1>
+          <span class="logo-sub">Álbum de Figurinhas — JP Edition</span>
+        </div>
       </div>
-      <div id="zoomControl">
-        <button class="zoom-btn" onclick="changeZoom(-0.1)">−</button>
-        <span id="zoomLabel">100%</span>
-        <button class="zoom-btn" onclick="changeZoom(0.1)">+</button>
-        <button class="zoom-btn" onclick="resetZoom()" title="Ajustar à tela">⊡</button>
+      <nav class="header-nav">
+        <button class="nav-btn active" data-view="album">📖 Álbum</button>
+        <button class="nav-btn" data-view="pack">🎴 Pacote</button>
+        <button class="nav-btn" data-view="doubles">🔄 Repetidas</button>
+        <button class="nav-btn" data-view="stats">📊 Stats</button>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" id="btn-import" title="Importar Save">📥</button>
+        <button class="icon-btn" id="btn-export" title="Exportar Save">📤</button>
+        <input type="file" id="import-file" accept=".json,.sav" style="display:none" />
       </div>
     </div>
+  </header>
 
-    <!-- Stickers -->
-    <div class="sidebar-section" style="flex:0 0 auto;">
-      <div class="sidebar-label">Figurinhas</div>
-      <button class="btn btn-gold mb-2" onclick="document.getElementById('stickerImport').click()">
-        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-        Importar Figurinhas
-      </button>
-      <div class="ornament"><span>✦</span></div>
-      <div id="stickerList">
-        <div id="stickerEmpty" style="grid-column:span 3;text-align:center;padding:16px;color:rgba(212,201,176,0.3);font-size:0.75rem;">
-          Nenhuma figurinha importada
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-content">
+      <div class="loading-seal">⚜</div>
+      <h2>Carregando Servants...</h2>
+      <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
+      <p id="loading-text">Conectando ao Chaldea Database...</p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <main id="app" style="display:none">
+
+    <!-- ALBUM VIEW -->
+    <section class="view active" id="view-album">
+      <div class="view-header">
+        <h2>Álbum de Servants</h2>
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all">Todos</button>
+          <button class="filter-btn" data-filter="1">★</button>
+          <button class="filter-btn" data-filter="2">★★</button>
+          <button class="filter-btn" data-filter="3">★★★</button>
+          <button class="filter-btn" data-filter="4">★★★★</button>
+          <button class="filter-btn" data-filter="5">★★★★★</button>
+          <button class="filter-btn" data-filter="obtained">Obtidos</button>
+          <button class="filter-btn" data-filter="missing">Faltando</button>
+        </div>
+        <div class="progress-overview">
+          <span id="progress-text">0 / 0 servants</span>
+          <div class="progress-bar-outer"><div class="progress-bar-inner" id="main-progress"></div></div>
         </div>
       </div>
-    </div>
 
-    <!-- Selected sticker properties -->
-    <div class="sidebar-section" id="selectedPanel" style="display:none;">
-      <div class="sidebar-label">Figurinha Selecionada</div>
-      <div id="propsPanel">
-        <div class="prop-row">
-          <span class="prop-label">Esc.</span>
-          <input type="range" class="prop-slider" id="scaleSlider" min="10" max="300" value="100" oninput="updateSelectedScale(this.value)">
-          <span class="prop-val" id="scaleVal">100%</span>
+      <!-- Class tabs -->
+      <div class="class-tabs" id="class-tabs"></div>
+
+      <!-- Servant grid -->
+      <div class="servant-grid" id="servant-grid"></div>
+    </section>
+
+    <!-- PACK VIEW -->
+    <section class="view" id="view-pack">
+      <div class="pack-container">
+        <div class="pack-header">
+          <h2>🎴 Abrir Pacote</h2>
+          <p class="pack-subtitle">Invoque 3 servants aleatórios!</p>
         </div>
-        <div class="prop-row">
-          <span class="prop-label">Rot.</span>
-          <input type="range" class="prop-slider" id="rotSlider" min="-180" max="180" value="0" oninput="updateSelectedRot(this.value)">
-          <span class="prop-val" id="rotVal">0°</span>
+
+        <div class="pack-timer-area" id="pack-timer-area">
+          <div class="hourglass">⏳</div>
+          <h3>Próximo Pacote em</h3>
+          <div class="countdown" id="countdown">--:--:--</div>
+          <p id="next-pack-date"></p>
         </div>
-        <div class="prop-row" style="margin-top:8px;margin-bottom:0;">
-          <button class="btn btn-danger btn-sm" style="font-size:0.55rem;" onclick="deleteSelected()">
-            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            Remover Figurinha
+
+        <div class="pack-ready-area" id="pack-ready-area" style="display:none">
+          <p class="pack-ready-text">Seu pacote está pronto!</p>
+          <button class="open-pack-btn" id="btn-open-pack">
+            <span class="pack-icon">🎴</span>
+            Abrir Pacote
           </button>
         </div>
+
+        <!-- Pack reveal overlay -->
+        <div class="pack-reveal" id="pack-reveal" style="display:none">
+          <h3>Servants Invocados!</h3>
+          <div class="reveal-cards" id="reveal-cards"></div>
+          <button class="close-reveal-btn" id="btn-close-reveal">Colar no Álbum ✓</button>
+        </div>
+
+        <!-- Pack history -->
+        <div class="pack-history">
+          <h3>Histórico de Pacotes</h3>
+          <div id="pack-history-list"></div>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <!-- Page grid -->
-    <div class="sidebar-section" style="flex:1;overflow:hidden;">
-      <div class="sidebar-label">Miniaturas</div>
-      <div id="pageGrid"></div>
-    </div>
+    <!-- DOUBLES VIEW -->
+    <section class="view" id="view-doubles">
+      <div class="view-header">
+        <h2>🔄 Figurinhas Repetidas</h2>
+        <p id="doubles-count">Nenhuma figurinha repetida ainda.</p>
+      </div>
+      <div class="servant-grid doubles-grid" id="doubles-grid"></div>
+    </section>
 
+    <!-- STATS VIEW -->
+    <section class="view" id="view-stats">
+      <div class="stats-container">
+        <h2>📊 Estatísticas</h2>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="rarity-chart" id="rarity-chart"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Servant Detail Modal -->
+  <div class="modal-overlay" id="servant-modal" style="display:none">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close">✕</button>
+      <div class="modal-content" id="modal-content"></div>
+    </div>
   </div>
 
-  <!-- Workspace -->
-  <div id="workspace" onclick="deselectAll(event)">
-    <div id="albumContainer">
-      <img id="albumPage" src="" alt="Página do álbum" draggable="false" />
-      <!-- Stickers will be injected here -->
+  <!-- Toast notifications -->
+  <div id="toast-container"></div>
+
+  <!-- Congratulations overlay -->
+  <div class="congrats-overlay" id="congrats-overlay" style="display:none">
+    <div class="congrats-content">
+      <div class="congrats-fireworks" id="congrats-fireworks"></div>
+      <h1>🎉 PARABÉNS! 🎉</h1>
+      <h2>Álbum Completo!</h2>
+      <p>Você coletou todos os <span id="congrats-count"></span> Servants!</p>
+      <p class="congrats-sub">Chaldea está completa, Mestre!</p>
+      <button class="congrats-btn" id="congrats-close">Fechar ✨</button>
     </div>
   </div>
-</div>
 
-<!-- Hidden inputs -->
-<input type="file" id="stickerImport" accept=".png,.jpg,.jpeg,.webp,.gif" multiple style="display:none;" onchange="importStickers(this)" />
-<input type="file" id="zipImport" accept=".zip" style="display:none;" onchange="importZip(this)" />
-
-<!-- Toast -->
-<div id="toast"></div>
-
-<script>
-// ═══════════════════════════════════════════════════════════════════
-// CONSTANTS & STATE
-// ═══════════════════════════════════════════════════════════════════
-
-const REPO_API  = 'https://api.github.com/repos/gamesistem/Fate/contents/';
-const RAW_BASE  = 'https://raw.githubusercontent.com/gamesistem/Fate/main/';
-
-const state = {
-  pages: [],           // array of { url, name }
-  currentPage: 0,
-  zoom: 1.0,
-  stickers: [],        // all imported stickers: { id, name, dataUrl }
-  placed: {},          // { pageIndex: [ { id, stickerId, x, y, scale, rot } ] }
-  selectedId: null,    // id of selected placed sticker
-};
-
-let albumW = 0, albumH = 0; // natural dimensions of album page
-
-// ═══════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════
-
-async function init() {
-  setLoading('Conectando ao repositório Fate...');
-  try {
-    const pages = await fetchPages();
-    if (!pages.length) throw new Error('Nenhuma página encontrada no repositório.');
-    state.pages = pages;
-    buildPageGrid();
-    await loadPage(0);
-    hideLoading();
-    showToast(`${pages.length} páginas carregadas com sucesso!`);
-  } catch (e) {
-    document.getElementById('loadingMsg').textContent = 'Erro: ' + e.message;
-    console.error(e);
-  }
-}
-
-async function fetchPages() {
-  setLoading('Listando arquivos do repositório...');
-  const res = await fetch(REPO_API);
-  if (!res.ok) throw new Error(`GitHub API: ${res.status}`);
-  const files = await res.json();
-
-  // Filter .jpg files with numeric names
-  const jpgs = files
-    .filter(f => f.type === 'file' && /^\d+\.jpg$/i.test(f.name))
-    .sort((a, b) => parseInt(a.name) - parseInt(b.name));
-
-  if (!jpgs.length) {
-    // fallback: try .png as well
-    const pngs = files
-      .filter(f => f.type === 'file' && /^\d+\.(jpg|png|jpeg)$/i.test(f.name))
-      .sort((a, b) => parseInt(a.name) - parseInt(b.name));
-    return pngs.map(f => ({ url: RAW_BASE + encodeURIComponent(f.name), name: f.name }));
-  }
-
-  return jpgs.map(f => ({ url: RAW_BASE + encodeURIComponent(f.name), name: f.name }));
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PAGE LOADING & NAVIGATION
-// ═══════════════════════════════════════════════════════════════════
-
-async function loadPage(idx) {
-  if (idx < 0 || idx >= state.pages.length) return;
-
-  const page = state.pages[idx];
-  const img = document.getElementById('albumPage');
-  const container = document.getElementById('albumContainer');
-
-  img.style.opacity = '0.4';
-  img.src = page.url;
-
-  await new Promise((res, rej) => {
-    img.onload = res;
-    img.onerror = rej;
-  });
-
-  albumW = img.naturalWidth || 800;
-  albumH = img.naturalHeight || 1100;
-
-  state.currentPage = idx;
-  img.style.opacity = '1';
-
-  fitToWorkspace();
-  renderPlacedStickers();
-  updateNav();
-  updatePageGrid();
-}
-
-function fitToWorkspace() {
-  const ws = document.getElementById('workspace');
-  const padding = 40;
-  const maxW = ws.clientWidth - padding * 2;
-  const maxH = ws.clientHeight - padding * 2;
-
-  const scaleW = maxW / albumW;
-  const scaleH = maxH / albumH;
-  state.zoom = Math.min(scaleW, scaleH, 1.2);
-
-  applyZoom();
-}
-
-function applyZoom() {
-  const container = document.getElementById('albumContainer');
-  container.style.width  = Math.round(albumW * state.zoom) + 'px';
-  container.style.height = Math.round(albumH * state.zoom) + 'px';
-  document.getElementById('zoomLabel').textContent = Math.round(state.zoom * 100) + '%';
-  renderPlacedStickers();
-}
-
-function changeZoom(delta) {
-  state.zoom = Math.max(0.2, Math.min(3, state.zoom + delta));
-  applyZoom();
-}
-
-function resetZoom() { fitToWorkspace(); }
-
-function changePage(delta) {
-  const next = state.currentPage + delta;
-  if (next < 0 || next >= state.pages.length) return;
-  deselectAll();
-  loadPage(next);
-}
-
-function updateNav() {
-  const { currentPage, pages } = state;
-  document.getElementById('prevBtn').disabled = currentPage === 0;
-  document.getElementById('nextBtn').disabled = currentPage === pages.length - 1;
-
-  let label = '';
-  if (currentPage === 0) label = 'Capa';
-  else if (currentPage === pages.length - 1) label = 'Contra-capa';
-  else label = `Pág. ${currentPage}`;
-
-  document.getElementById('pageIndicator').textContent = `${label} (${currentPage + 1}/${pages.length})`;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PAGE GRID (thumbnails)
-// ═══════════════════════════════════════════════════════════════════
-
-function buildPageGrid() {
-  const grid = document.getElementById('pageGrid');
-  grid.innerHTML = '';
-  state.pages.forEach((page, idx) => {
-    const div = document.createElement('div');
-    div.className = 'page-thumb';
-    div.dataset.idx = idx;
-    const img = document.createElement('img');
-    img.src = page.url;
-    img.loading = 'lazy';
-    img.draggable = false;
-    div.appendChild(img);
-    div.addEventListener('click', () => { deselectAll(); loadPage(idx); });
-    grid.appendChild(div);
-  });
-}
-
-function updatePageGrid() {
-  document.querySelectorAll('.page-thumb').forEach(el => {
-    el.classList.toggle('active', parseInt(el.dataset.idx) === state.currentPage);
-  });
-  // scroll active into view
-  const active = document.querySelector('.page-thumb.active');
-  if (active) active.scrollIntoView({ block: 'nearest' });
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// STICKER IMPORT
-// ═══════════════════════════════════════════════════════════════════
-
-function importStickers(input) {
-  const files = Array.from(input.files);
-  if (!files.length) return;
-
-  let count = 0;
-  files.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const sticker = {
-        id: 's_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-        name: file.name,
-        dataUrl: e.target.result,
-      };
-      state.stickers.push(sticker);
-      addStickerThumb(sticker);
-      count++;
-      if (count === files.length) showToast(`${count} figurinha(s) importada(s)`);
-    };
-    reader.readAsDataURL(file);
-  });
-
-  input.value = '';
-  document.getElementById('stickerEmpty').style.display = 'none';
-}
-
-function addStickerThumb(sticker) {
-  const list = document.getElementById('stickerList');
-  const div = document.createElement('div');
-  div.className = 'sticker-thumb';
-  div.dataset.stickerId = sticker.id;
-  div.title = sticker.name;
-
-  const img = document.createElement('img');
-  img.src = sticker.dataUrl;
-  img.draggable = false;
-
-  const del = document.createElement('div');
-  del.className = 'sticker-del';
-  del.innerHTML = '✕';
-  del.onclick = e => { e.stopPropagation(); removeStickerFromLibrary(sticker.id); };
-
-  div.appendChild(img);
-  div.appendChild(del);
-  div.addEventListener('click', () => placeSticker(sticker.id));
-
-  list.appendChild(div);
-}
-
-function removeStickerFromLibrary(stickerId) {
-  state.stickers = state.stickers.filter(s => s.id !== stickerId);
-  // remove all placed instances
-  Object.keys(state.placed).forEach(pageIdx => {
-    state.placed[pageIdx] = state.placed[pageIdx].filter(p => p.stickerId !== stickerId);
-  });
-  document.querySelector(`.sticker-thumb[data-sticker-id="${stickerId}"]`)?.remove();
-  renderPlacedStickers();
-  if (!state.stickers.length) document.getElementById('stickerEmpty').style.display = '';
-  showToast('Figurinha removida');
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// PLACE STICKER ON CANVAS
-// ═══════════════════════════════════════════════════════════════════
-
-function placeSticker(stickerId) {
-  const sticker = state.stickers.find(s => s.id === stickerId);
-  if (!sticker) return;
-
-  const pageIdx = state.currentPage;
-  if (!state.placed[pageIdx]) state.placed[pageIdx] = [];
-
-  const placed = {
-    id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-    stickerId,
-    // place in center of visible album, in album-coordinate space
-    x: albumW * 0.5 - 60,
-    y: albumH * 0.5 - 60,
-    scale: 1.0,
-    rot: 0,
-  };
-
-  state.placed[pageIdx].push(placed);
-  renderPlacedStickers();
-  selectSticker(placed.id);
-  showToast('Figurinha colocada! Arraste para reposicionar.');
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// RENDER PLACED STICKERS
-// ═══════════════════════════════════════════════════════════════════
-
-function renderPlacedStickers() {
-  const container = document.getElementById('albumContainer');
-  // Remove all existing placed stickers
-  container.querySelectorAll('.placed-sticker').forEach(el => el.remove());
-
-  const pageIdx = state.currentPage;
-  const placed = state.placed[pageIdx] || [];
-
-  placed.forEach(p => {
-    const sticker = state.stickers.find(s => s.id === p.stickerId);
-    if (!sticker) return;
-
-    const el = createStickerElement(p, sticker);
-    container.appendChild(el);
-    if (p.id === state.selectedId) el.classList.add('selected');
-  });
-}
-
-function createStickerElement(p, sticker) {
-  const baseSize = 120; // base px in album coordinates
-  const displayW = baseSize * p.scale * state.zoom;
-  const displayH = baseSize * p.scale * state.zoom;
-
-  const el = document.createElement('div');
-  el.className = 'placed-sticker';
-  el.dataset.id = p.id;
-  el.style.left   = (p.x * state.zoom) + 'px';
-  el.style.top    = (p.y * state.zoom) + 'px';
-  el.style.width  = displayW + 'px';
-  el.style.height = displayH + 'px';
-  el.style.transform = `rotate(${p.rot}deg)`;
-  el.style.zIndex = 10;
-
-  const frame = document.createElement('div');
-  frame.className = 'sticker-frame';
-
-  const img = document.createElement('img');
-  img.src = sticker.dataUrl;
-  img.draggable = false;
-
-  // Resize handles
-  ['nw','ne','sw','se'].forEach(pos => {
-    const h = document.createElement('div');
-    h.className = `resize-handle ${pos}`;
-    h.addEventListener('pointerdown', e => startResize(e, p.id, pos));
-    frame.appendChild(h);
-  });
-
-  // Rotate handle
-  const rotH = document.createElement('div');
-  rotH.className = 'rotate-handle';
-  rotH.addEventListener('pointerdown', e => startRotate(e, p.id));
-  frame.appendChild(rotH);
-
-  // Delete handle
-  const delH = document.createElement('div');
-  delH.className = 'delete-handle';
-  delH.innerHTML = '✕';
-  delH.addEventListener('pointerdown', e => { e.stopPropagation(); deletePlaced(p.id); });
-  frame.appendChild(delH);
-
-  frame.appendChild(img);
-  el.appendChild(frame);
-
-  // Drag to move
-  el.addEventListener('pointerdown', e => startDrag(e, p.id));
-  el.addEventListener('click', e => { e.stopPropagation(); selectSticker(p.id); });
-
-  return el;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SELECT / DESELECT
-// ═══════════════════════════════════════════════════════════════════
-
-function selectSticker(id) {
-  state.selectedId = id;
-  document.querySelectorAll('.placed-sticker').forEach(el => {
-    el.classList.toggle('selected', el.dataset.id === id);
-  });
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === id);
-  if (placed) {
-    document.getElementById('selectedPanel').style.display = '';
-    document.getElementById('scaleSlider').value = Math.round(placed.scale * 100);
-    document.getElementById('scaleVal').textContent = Math.round(placed.scale * 100) + '%';
-    document.getElementById('rotSlider').value = Math.round(placed.rot);
-    document.getElementById('rotVal').textContent = Math.round(placed.rot) + '°';
-  }
-}
-
-function deselectAll(e) {
-  if (e && e.target !== document.getElementById('workspace') &&
-      e.target !== document.getElementById('albumContainer') &&
-      e.target !== document.getElementById('albumPage')) return;
-  state.selectedId = null;
-  document.querySelectorAll('.placed-sticker').forEach(el => el.classList.remove('selected'));
-  document.getElementById('selectedPanel').style.display = 'none';
-}
-
-function deleteSelected() { if (state.selectedId) deletePlaced(state.selectedId); }
-
-function deletePlaced(id) {
-  const pageIdx = state.currentPage;
-  state.placed[pageIdx] = (state.placed[pageIdx] || []).filter(p => p.id !== id);
-  if (state.selectedId === id) {
-    state.selectedId = null;
-    document.getElementById('selectedPanel').style.display = 'none';
-  }
-  renderPlacedStickers();
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// DRAG TO MOVE
-// ═══════════════════════════════════════════════════════════════════
-
-let dragging = null;
-
-function startDrag(e, id) {
-  if (e.target.classList.contains('resize-handle') ||
-      e.target.classList.contains('rotate-handle') ||
-      e.target.classList.contains('delete-handle')) return;
-
-  e.stopPropagation();
-  e.preventDefault();
-  selectSticker(id);
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === id);
-  if (!placed) return;
-
-  const el = document.querySelector(`.placed-sticker[data-id="${id}"]`);
-  const rect = el.getBoundingClientRect();
-
-  dragging = {
-    id,
-    offsetX: e.clientX - rect.left,
-    offsetY: e.clientY - rect.top,
-  };
-
-  el.setPointerCapture(e.pointerId);
-  el.addEventListener('pointermove', onDragMove);
-  el.addEventListener('pointerup', onDragEnd);
-}
-
-function onDragMove(e) {
-  if (!dragging) return;
-  const container = document.getElementById('albumContainer');
-  const cRect = container.getBoundingClientRect();
-
-  const newLeft = e.clientX - cRect.left - dragging.offsetX;
-  const newTop  = e.clientY - cRect.top  - dragging.offsetY;
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === dragging.id);
-  if (!placed) return;
-
-  placed.x = newLeft / state.zoom;
-  placed.y = newTop  / state.zoom;
-
-  const el = document.querySelector(`.placed-sticker[data-id="${dragging.id}"]`);
-  if (el) {
-    el.style.left = newLeft + 'px';
-    el.style.top  = newTop  + 'px';
-  }
-}
-
-function onDragEnd(e) {
-  if (!dragging) return;
-  const el = document.querySelector(`.placed-sticker[data-id="${dragging.id}"]`);
-  if (el) {
-    el.removeEventListener('pointermove', onDragMove);
-    el.removeEventListener('pointerup', onDragEnd);
-  }
-  dragging = null;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// RESIZE
-// ═══════════════════════════════════════════════════════════════════
-
-let resizing = null;
-
-function startResize(e, id, corner) {
-  e.stopPropagation();
-  e.preventDefault();
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === id);
-  if (!placed) return;
-
-  const el = document.querySelector(`.placed-sticker[data-id="${id}"]`);
-  const rect = el.getBoundingClientRect();
-
-  resizing = {
-    id, corner,
-    startX: e.clientX,
-    startY: e.clientY,
-    startScale: placed.scale,
-    startW: rect.width,
-    startH: rect.height,
-  };
-
-  el.setPointerCapture(e.pointerId);
-  el.addEventListener('pointermove', onResizeMove);
-  el.addEventListener('pointerup', onResizeEnd);
-}
-
-function onResizeMove(e) {
-  if (!resizing) return;
-  const { id, corner, startX, startY, startScale, startW } = resizing;
-
-  const dx = e.clientX - startX;
-  const dy = e.clientY - startY;
-  let delta = 0;
-  if (corner === 'se') delta = (dx + dy) / 2;
-  else if (corner === 'sw') delta = (-dx + dy) / 2;
-  else if (corner === 'ne') delta = (dx - dy) / 2;
-  else if (corner === 'nw') delta = (-dx - dy) / 2;
-
-  const newScale = Math.max(0.1, startScale + (delta / startW) * startScale * 2);
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === id);
-  if (!placed) return;
-  placed.scale = newScale;
-
-  const el = document.querySelector(`.placed-sticker[data-id="${id}"]`);
-  if (el) {
-    const baseSize = 120;
-    const displayW = baseSize * newScale * state.zoom;
-    el.style.width  = displayW + 'px';
-    el.style.height = displayW + 'px';
-  }
-
-  // sync slider
-  document.getElementById('scaleSlider').value = Math.round(newScale * 100);
-  document.getElementById('scaleVal').textContent = Math.round(newScale * 100) + '%';
-}
-
-function onResizeEnd(e) {
-  if (!resizing) return;
-  const el = document.querySelector(`.placed-sticker[data-id="${resizing.id}"]`);
-  if (el) {
-    el.removeEventListener('pointermove', onResizeMove);
-    el.removeEventListener('pointerup', onResizeEnd);
-  }
-  resizing = null;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// ROTATE
-// ═══════════════════════════════════════════════════════════════════
-
-let rotating = null;
-
-function startRotate(e, id) {
-  e.stopPropagation();
-  e.preventDefault();
-
-  const el = document.querySelector(`.placed-sticker[data-id="${id}"]`);
-  const rect = el.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top  + rect.height / 2;
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === id);
-  if (!placed) return;
-
-  const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
-
-  rotating = { id, centerX, centerY, startAngle, startRot: placed.rot };
-
-  el.setPointerCapture(e.pointerId);
-  el.addEventListener('pointermove', onRotateMove);
-  el.addEventListener('pointerup', onRotateEnd);
-}
-
-function onRotateMove(e) {
-  if (!rotating) return;
-  const { id, centerX, centerY, startAngle, startRot } = rotating;
-  const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
-  const delta = angle - startAngle;
-  const newRot = startRot + delta;
-
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === id);
-  if (!placed) return;
-  placed.rot = newRot;
-
-  const el = document.querySelector(`.placed-sticker[data-id="${id}"]`);
-  if (el) el.style.transform = `rotate(${newRot}deg)`;
-
-  document.getElementById('rotSlider').value = Math.round(newRot);
-  document.getElementById('rotVal').textContent = Math.round(newRot) + '°';
-}
-
-function onRotateEnd(e) {
-  if (!rotating) return;
-  const el = document.querySelector(`.placed-sticker[data-id="${rotating.id}"]`);
-  if (el) {
-    el.removeEventListener('pointermove', onRotateMove);
-    el.removeEventListener('pointerup', onRotateEnd);
-  }
-  rotating = null;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// SIDEBAR PROPERTY SLIDERS
-// ═══════════════════════════════════════════════════════════════════
-
-function updateSelectedScale(val) {
-  document.getElementById('scaleVal').textContent = val + '%';
-  if (!state.selectedId) return;
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === state.selectedId);
-  if (!placed) return;
-  placed.scale = val / 100;
-  const el = document.querySelector(`.placed-sticker[data-id="${state.selectedId}"]`);
-  if (el) {
-    const displayW = 120 * placed.scale * state.zoom;
-    el.style.width  = displayW + 'px';
-    el.style.height = displayW + 'px';
-  }
-}
-
-function updateSelectedRot(val) {
-  document.getElementById('rotVal').textContent = val + '°';
-  if (!state.selectedId) return;
-  const pageIdx = state.currentPage;
-  const placed = (state.placed[pageIdx] || []).find(p => p.id === state.selectedId);
-  if (!placed) return;
-  placed.rot = parseFloat(val);
-  const el = document.querySelector(`.placed-sticker[data-id="${state.selectedId}"]`);
-  if (el) el.style.transform = `rotate(${val}deg)`;
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// EXPORT ZIP
-// ═══════════════════════════════════════════════════════════════════
-
-async function exportZip() {
-  showToast('Gerando arquivo ZIP...');
-  const zip = new JSZip();
-
-  // Build save.json metadata
-  const meta = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    pages: state.pages.map(p => ({ url: p.url, name: p.name })),
-    stickers: state.stickers.map(s => ({ id: s.id, name: s.name })),
-    placed: state.placed,
-  };
-  zip.file('save.json', JSON.stringify(meta, null, 2));
-
-  // Save sticker images
-  const stickersFolder = zip.folder('stickers');
-  for (const s of state.stickers) {
-    const base64 = s.dataUrl.split(',')[1];
-    const ext = s.name.split('.').pop() || 'png';
-    stickersFolder.file(s.id + '.' + ext, base64, { base64: true });
-  }
-
-  // Render each modified page as a flat image
-  const pagesFolder = zip.folder('pages');
-  const modifiedPages = Object.keys(state.placed).filter(idx => (state.placed[idx] || []).length > 0);
-
-  for (const idxStr of modifiedPages) {
-    const idx = parseInt(idxStr);
-    try {
-      const dataUrl = await renderPageToCanvas(idx);
-      const base64 = dataUrl.split(',')[1];
-      pagesFolder.file(`page_${idx + 1}.jpg`, base64, { base64: true });
-    } catch (e) {
-      console.warn('Could not render page', idx, e);
-    }
-  }
-
-  const blob = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'fate-album-projeto.zip';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Álbum exportado com sucesso!');
-}
-
-async function renderPageToCanvas(pageIdx) {
-  const page = state.pages[pageIdx];
-  const placed = state.placed[pageIdx] || [];
-
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas');
-    canvas.width  = albumW;
-    canvas.height = albumH;
-    const ctx = canvas.getContext('2d');
-
-    const bgImg = new Image();
-    bgImg.crossOrigin = 'anonymous';
-    bgImg.onload = async () => {
-      ctx.drawImage(bgImg, 0, 0, albumW, albumH);
-
-      for (const p of placed) {
-        const sticker = state.stickers.find(s => s.id === p.stickerId);
-        if (!sticker) continue;
-        await new Promise(res => {
-          const sImg = new Image();
-          sImg.onload = () => {
-            ctx.save();
-            const baseSize = 120;
-            const drawW = baseSize * p.scale;
-            const drawH = baseSize * p.scale;
-            const cx = p.x + drawW / 2;
-            const cy = p.y + drawH / 2;
-            ctx.translate(cx, cy);
-            ctx.rotate(p.rot * Math.PI / 180);
-            ctx.drawImage(sImg, -drawW / 2, -drawH / 2, drawW, drawH);
-            ctx.restore();
-            res();
-          };
-          sImg.onerror = res;
-          sImg.src = sticker.dataUrl;
-        });
-      }
-
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
-    };
-    bgImg.onerror = reject;
-    bgImg.src = page.url;
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// IMPORT ZIP
-// ═══════════════════════════════════════════════════════════════════
-
-async function importZip(input) {
-  const file = input.files[0];
-  if (!file) return;
-  input.value = '';
-
-  showToast('Lendo arquivo ZIP...');
-
-  try {
-    const zip = await JSZip.loadAsync(file);
-
-    // Read save.json
-    const metaFile = zip.file('save.json');
-    if (!metaFile) throw new Error('save.json não encontrado no ZIP.');
-    const meta = JSON.parse(await metaFile.async('string'));
-
-    // Restore stickers
-    const newStickers = [];
-    document.getElementById('stickerList').innerHTML = '';
-    document.getElementById('stickerEmpty').style.display = 'none';
-    document.getElementById('stickerList').appendChild(document.getElementById('stickerEmpty'));
-
-    for (const sm of (meta.stickers || [])) {
-      // Find file in zip
-      const stickerFile = zip.file(`stickers/${sm.id}.${sm.name.split('.').pop() || 'png'}`) ||
-                          zip.file(`stickers/${sm.id}.png`) ||
-                          zip.file(`stickers/${sm.id}.jpg`);
-
-      if (stickerFile) {
-        const b64 = await stickerFile.async('base64');
-        const ext = sm.name.split('.').pop() || 'png';
-        const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
-        const dataUrl = `data:${mime};base64,${b64}`;
-        const sticker = { id: sm.id, name: sm.name, dataUrl };
-        newStickers.push(sticker);
-        addStickerThumb(sticker);
-      }
-    }
-
-    state.stickers = newStickers;
-    state.placed   = meta.placed || {};
-
-    // Reload current page
-    await loadPage(state.currentPage);
-    showToast('Projeto importado! Edição restaurada.');
-  } catch (e) {
-    showToast('Erro ao importar: ' + e.message);
-    console.error(e);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// LOADING / TOAST UI
-// ═══════════════════════════════════════════════════════════════════
-
-function setLoading(msg) {
-  document.getElementById('loadingMsg').textContent = msg;
-  document.getElementById('loadingOverlay').style.display = 'flex';
-}
-
-function hideLoading() {
-  document.getElementById('loadingOverlay').style.display = 'none';
-}
-
-let toastTimer = null;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ═══════════════════════════════════════════════════════════════════
-// KEYBOARD SHORTCUTS
-// ═══════════════════════════════════════════════════════════════════
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (state.selectedId && document.activeElement === document.body) {
-      deleteSelected();
-    }
-  }
-  if (e.key === 'ArrowLeft' && !e.shiftKey) changePage(-1);
-  if (e.key === 'ArrowRight' && !e.shiftKey) changePage(1);
-  if (e.key === 'Escape') deselectAll({ target: document.getElementById('workspace') });
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); exportZip(); }
-  if (e.key === '+' || e.key === '=') changeZoom(0.1);
-  if (e.key === '-') changeZoom(-0.1);
-  if (e.key === '0') resetZoom();
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// RESIZE WINDOW
-// ═══════════════════════════════════════════════════════════════════
-
-window.addEventListener('resize', () => {
-  if (state.pages.length) fitToWorkspace();
-});
-
-// ═══════════════════════════════════════════════════════════════════
-// BOOT
-// ═══════════════════════════════════════════════════════════════════
-
-init();
-</script>
+  <script src="app.js"></script>
 </body>
 </html>
