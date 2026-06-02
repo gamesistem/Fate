@@ -7,7 +7,7 @@
 
 // ── Constants ──────────────────────────────────────────────
 const API_BASE = 'https://api.atlasacademy.io';
-const PACK_COOLDOWN_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
+const PACK_COOLDOWN_MS = 0 * 30 * 60 * 60 * 1000; // 5 days
 const CARDS_PER_PACK = 3;
 const SAVE_KEY = 'fgo_album_save';
 
