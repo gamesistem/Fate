@@ -10,10 +10,8 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Background particles -->
   <canvas id="bg-canvas"></canvas>
 
-  <!-- Header -->
   <header id="site-header">
     <div class="header-inner">
       <div class="logo-area">
@@ -25,10 +23,15 @@
       </div>
       <nav class="header-nav">
         <button class="nav-btn active" data-view="album">📖 Álbum</button>
-        <button class="nav-btn" data-view="pack">🎴 Pacote</button>
+        <button class="nav-btn" data-view="pack">🎴 Invocação</button>
         <button class="nav-btn" data-view="doubles">🔄 Repetidas</button>
+        <button class="nav-btn" data-view="dino">🦖 Minigame SQ</button>
         <button class="nav-btn" data-view="stats">📊 Stats</button>
       </nav>
+      <div class="header-sq-display">
+        <span class="sq-diamond">💎</span>
+        <span id="sq-amount">0</span> SQ
+      </div>
       <div class="header-actions">
         <button class="icon-btn" id="btn-import" title="Importar Save">📥</button>
         <button class="icon-btn" id="btn-export" title="Exportar Save">📤</button>
@@ -37,7 +40,6 @@
     </div>
   </header>
 
-  <!-- Loading Screen -->
   <div id="loading-screen">
     <div class="loading-content">
       <div class="loading-seal">⚜</div>
@@ -47,10 +49,8 @@
     </div>
   </div>
 
-  <!-- Main App -->
   <main id="app" style="display:none">
 
-    <!-- ALBUM VIEW -->
     <section class="view active" id="view-album">
       <div class="view-header">
         <h2>Álbum de Servants</h2>
@@ -69,62 +69,109 @@
           <div class="progress-bar-outer"><div class="progress-bar-inner" id="main-progress"></div></div>
         </div>
       </div>
-
-      <!-- Class tabs -->
       <div class="class-tabs" id="class-tabs"></div>
-
-      <!-- Servant grid -->
       <div class="servant-grid" id="servant-grid"></div>
     </section>
 
-    <!-- PACK VIEW -->
     <section class="view" id="view-pack">
       <div class="pack-container">
         <div class="pack-header">
-          <h2>🎴 Abrir Pacote</h2>
-          <p class="pack-subtitle">Invoque 3 servants aleatórios!</p>
+          <h2>Invocação de Servants</h2>
+          <p class="pack-subtitle">Invoque novos heróis usando o temporizador gratuito ou gaste seus Saint Quartz na Loja de Chaldea!</p>
         </div>
 
-        <div class="pack-timer-area" id="pack-timer-area">
-          <div class="hourglass">⏳</div>
-          <h3>Próximo Pacote em</h3>
-          <div class="countdown" id="countdown">--:--:--</div>
-          <p id="next-pack-date"></p>
-        </div>
-
-        <div class="pack-ready-area" id="pack-ready-area" style="display:none">
-          <p class="pack-ready-text">Seu pacote está pronto!</p>
-          <button class="open-pack-btn" id="btn-open-pack">
-            <span class="pack-icon">🎴</span>
-            Abrir Pacote
-          </button>
-        </div>
-
-        <!-- Pack reveal overlay -->
         <div class="pack-reveal" id="pack-reveal" style="display:none">
-          <h3>Servants Invocados!</h3>
+          <h3 id="reveal-title">Invocação Concluída!</h3>
           <div class="reveal-cards" id="reveal-cards"></div>
-          <button class="close-reveal-btn" id="btn-close-reveal">Colar no Álbum ✓</button>
+          <button class="congrats-btn" id="btn-close-reveal">Adicionar ao Álbum</button>
         </div>
 
-        <!-- Pack history -->
-        <div class="pack-history">
-          <h3>Histórico de Pacotes</h3>
-          <div id="pack-history-list"></div>
+        <div class="pack-sections-grid">
+          <div class="pack-card-box premium-box">
+            <h3>🎁 Pacote Diário Gratuito</h3>
+            <p>Disponível periodicamente a cada 30 minutos.</p>
+            <div id="pack-timer-area" class="pack-timer-area">
+              <span class="hourglass">⏳</span>
+              <div class="countdown" id="countdown">00:00:00</div>
+              <div id="next-pack-date"></div>
+            </div>
+            <div id="pack-ready-area" class="pack-ready-area" style="display:none">
+              <p class="pack-ready-text">Energia Leyline Estabelecida!</p>
+              <button class="open-pack-btn" id="btn-open-pack">
+                <span class="pack-icon">🎴</span> Abrir Grátis (3 Servants)
+              </button>
+            </div>
+          </div>
+
+          <div class="pack-card-box shop-box">
+            <h3>💎 Loja de Saint Quartz</h3>
+            <div class="shop-item">
+              <div class="shop-item-info">
+                <h4>Pacote Básico</h4>
+                <p>Contém 3 Servants aleatórios.</p>
+              </div>
+              <button class="buy-pack-btn" id="btn-buy-basic">Comprar por <strong>30 SQ</strong></button>
+            </div>
+
+            <div class="shop-item">
+              <div class="shop-item-info">
+                <h4>Pacote Avançado (5 Servos)</h4>
+                <p>Invoque 5 Servants. Maiores chances de vir pelo menos um 3★+!</p>
+              </div>
+              <button class="buy-pack-btn" id="btn-buy-medium">Comprar por <strong>100 SQ</strong></button>
+            </div>
+
+            <div class="shop-item special-item">
+              <div class="shop-item-info">
+                <h4>✨ Pacote Supremo Celestial</h4>
+                <p>Invoque 50 Servants simultâneos. <strong>Garante pelo menos um Servant 5★ (SSR)!</strong></p>
+              </div>
+              <button class="buy-pack-btn premium-btn" id="btn-buy-supreme">Comprar por <br><strong>100.000.000.000 SQ</strong></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pack-history-section">
+          <h3>Histórico Recente de Invocações</h3>
+          <div class="pack-history-list" id="pack-history-list"></div>
         </div>
       </div>
     </section>
 
-    <!-- DOUBLES VIEW -->
     <section class="view" id="view-doubles">
       <div class="view-header">
-        <h2>🔄 Figurinhas Repetidas</h2>
+        <h2>🔄 Loja de Trocas & Figurinhas Repetidas</h2>
         <p id="doubles-count">Nenhuma figurinha repetida ainda.</p>
+        <div id="doubles-shop-actions" style="margin-top: 10px; display: none;">
+          <button class="congrats-btn" id="btn-sell-all" style="font-size: 0.9rem; padding: 8px 20px;">Vender Todas as Elegíveis</button>
+          <div style="font-size: 0.85rem; color: var(--text-dim); margin-top: 5px;">Tabela: 1★ a 3★ = 2 SQ | 5★ = 10 SQ</div>
+        </div>
       </div>
       <div class="servant-grid doubles-grid" id="doubles-grid"></div>
     </section>
 
-    <!-- STATS VIEW -->
+    <section class="view" id="view-dino">
+      <div class="view-header">
+        <h2>Rex Run — Minigame Sem WiFi</h2>
+        <p>Ajude o Chaldea Sprite a desviar dos obstáculos! Quanto mais longe você chegar, mais Saint Quartz (SQ) você acumula.</p>
+      </div>
+      <div class="dino-game-container">
+        <div class="dino-hud">
+          <div>Distância: <span id="dino-score">0</span>m</div>
+          <div>SQ Ganhos: <span id="dino-sq-earned">0</span> 💎</div>
+          <div>Recorde: <span id="dino-highscore">0</span>m</div>
+        </div>
+        <div class="dino-canvas-wrapper">
+          <canvas id="dino-canvas" width="800" height="250"></canvas>
+          <div id="dino-start-screen" class="dino-overlay-screen">
+            <h3>Pressione ESPAÇO ou Toque para Iniciar</h3>
+            <p>Controles: Barra de Espaço / Seta para Cima / Clique na tela para Pular</p>
+            <button class="congrats-btn" id="btn-start-dino">Iniciar Corrida</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="view" id="view-stats">
       <div class="stats-container">
         <h2>📊 Estatísticas</h2>
@@ -135,7 +182,6 @@
 
   </main>
 
-  <!-- Servant Detail Modal -->
   <div class="modal-overlay" id="servant-modal" style="display:none">
     <div class="modal-card">
       <button class="modal-close" id="modal-close">✕</button>
@@ -143,18 +189,15 @@
     </div>
   </div>
 
-  <!-- Toast notifications -->
   <div id="toast-container"></div>
 
-  <!-- Congratulations overlay -->
   <div class="congrats-overlay" id="congrats-overlay" style="display:none">
     <div class="congrats-content">
       <div class="congrats-fireworks" id="congrats-fireworks"></div>
       <h1>🎉 PARABÉNS! 🎉</h1>
       <h2>Álbum Completo!</h2>
-      <p>Você coletou todos os <span id="congrats-count"></span> Servants!</p>
-      <p class="congrats-sub">Chaldea está completa, Mestre!</p>
-      <button class="congrats-btn" id="congrats-close">Fechar ✨</button>
+      <p>Você coletou todos os <span id="congrats-total">---</span> Servants da história humana!</p>
+      <button class="congrats-btn" id="congrats-close">Contemplar Meu Álbum</button>
     </div>
   </div>
 
