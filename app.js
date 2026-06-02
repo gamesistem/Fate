@@ -8,7 +8,7 @@
 // ── Constants ──────────────────────────────────────────────
 const API_BASE = 'https://api.atlasacademy.io';
 const PACK_COOLDOWN_MS = 30 * 60 * 1000; // Alterado para 30 minutos
-const CARDS_PER_PACK = 5;
+const CARDS_PER_PACK = 3;
 const SAVE_KEY = 'fgo_album_save';
 
 // Rarity weights (higher rarity = harder to get)
