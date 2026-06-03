@@ -37,6 +37,7 @@
         <button class="icon-btn" id="btn-export" title="Exportar Save">📤</button>
         <input type="file" id="import-file" accept=".json,.sav" style="display:none" />
       </div>
+      <div id="dev-buff-badge" style="display:none; align-items:center; gap:4px; background:rgba(255,200,0,0.15); border:1px solid #c9a84c; border-radius:6px; padding:3px 10px; font-size:0.75rem; color:#c9a84c; font-family:'Rajdhani',sans-serif; font-weight:600; letter-spacing:1px;">⚡ DEV BUFF</div>
     </div>
   </header>
 
@@ -144,7 +145,7 @@
         <p id="doubles-count">Nenhuma figurinha repetida ainda.</p>
         <div id="doubles-shop-actions" style="margin-top: 10px; display: none;">
           <button class="congrats-btn" id="btn-sell-all" style="font-size: 0.9rem; padding: 8px 20px;">Vender Todas as Elegíveis</button>
-          <div style="font-size: 0.85rem; color: var(--text-dim); margin-top: 5px;">Tabela: 1★ a 3★ = 2 SQ | 5★ = 10 SQ</div>
+          <div style="font-size: 0.85rem; color: var(--text-dim); margin-top: 5px;">Tabela: 1★ a 3★ = 2 SQ | 4★ = 5 SQ | 5★ = 10 SQ</div>
         </div>
       </div>
       <div class="servant-grid doubles-grid" id="doubles-grid"></div>
@@ -161,11 +162,11 @@
           <div>SQ Ganhos: <span id="dino-sq-earned">0</span> 💎</div>
           <div>Recorde: <span id="dino-highscore">0</span>m</div>
         </div>
-        <div class="dino-canvas-wrapper">
+        <div class="dino-canvas-wrapper" id="dino-canvas-wrapper">
           <canvas id="dino-canvas" width="800" height="250"></canvas>
           <div id="dino-start-screen" class="dino-overlay-screen">
             <h3>Pressione ESPAÇO ou Toque para Iniciar</h3>
-            <p>Controles: Barra de Espaço / Seta para Cima / Clique na tela para Pular</p>
+            <p>Controles: Espaço / Seta ↑ para pular | Toque na tela (mobile/tablet)</p>
             <button class="congrats-btn" id="btn-start-dino">Iniciar Corrida</button>
           </div>
         </div>

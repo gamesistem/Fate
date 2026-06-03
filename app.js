@@ -7,9 +7,15 @@
 
 // ── Constants ──────────────────────────────────────────────
 const API_BASE = 'https://api.atlasacademy.io';
-const PACK_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutos
+const PACK_COOLDOWN_NORMAL_MS = 30 * 60 * 1000; // 30 minutos
+const PACK_COOLDOWN_CHEAT_MS  = 30 * 1000;       // 30 segundos (cheat)
 const CARDS_PER_PACK = 3;
 const SAVE_KEY = 'fgo_album_save';
+
+// Computed based on active cheat
+function PACK_COOLDOWN_MS() {
+  return state.devBuffActive ? PACK_COOLDOWN_CHEAT_MS : PACK_COOLDOWN_NORMAL_MS;
+}
 
 // Rarity weights (higher rarity = harder to get)
 const RARITY_WEIGHTS = {
@@ -50,7 +56,8 @@ let state = {
   currentClass: 'all',
   activeView: 'album',
   sq: 0,                 // Saint Quartz Currency
-  dinoHighScore: 0       // Minigame record
+  dinoHighScore: 0,      // Minigame record
+  devBuffActive: false   // Ctrl+1 cheat: cooldown vira 30s
 };
 
 // Dino Game Variable instances
@@ -199,6 +206,25 @@ function initUI() {
     document.getElementById('congrats-overlay').style.display = 'none';
   });
 
+  // ── Cheat: Ctrl+1 — Cooldown Turbo (30min → 30s) ──────────
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === '1') {
+      e.preventDefault();
+      state.devBuffActive = !state.devBuffActive;
+      const badge = document.getElementById('dev-buff-badge');
+      if (badge) {
+        badge.style.display = state.devBuffActive ? 'inline-flex' : 'none';
+      }
+      showToast(
+        state.devBuffActive
+          ? '⚡ Dev Buff ATIVADO — Cooldown: 30 segundos!'
+          : '🔒 Dev Buff desativado — Cooldown voltou ao normal.',
+        state.devBuffActive ? 'success' : 'info'
+      );
+      updatePackUI();
+    }
+  });
+
   renderAlbum();
   renderDoublesView();
   renderStatsView();
@@ -318,9 +344,10 @@ function showModal(servant) {
   const rarityColors = {1: '#9e9e9e', 2: '#7cb0d6', 3: '#6abf6a', 4: '#d4a0e8', 5: '#f0c040'};
   const color = rarityColors[servant.rarity] || '#fff';
 
-  const canSell = obtained && count > 1 && (servant.rarity <= 3 || servant.rarity === 5);
+  const canSell = obtained && count > 1 && (servant.rarity <= 3 || servant.rarity === 4 || servant.rarity === 5);
   let sellPrice = 0;
   if (servant.rarity <= 3) sellPrice = 2;
+  if (servant.rarity === 4) sellPrice = 5;
   if (servant.rarity === 5) sellPrice = 10;
 
   content.innerHTML = `
@@ -385,7 +412,7 @@ function startPackTimer() {
 
 function canOpenPack() {
   if (!state.lastPackTime) return true;
-  return (Date.now() - state.lastPackTime) >= PACK_COOLDOWN_MS;
+  return (Date.now() - state.lastPackTime) >= PACK_COOLDOWN_MS();
 }
 
 function updatePackUI() {
@@ -401,8 +428,8 @@ function updatePackUI() {
     timerArea.style.display = 'block';
     readyArea.style.display = 'none';
 
-    const remaining = (state.lastPackTime + PACK_COOLDOWN_MS) - Date.now();
-    const nextDate = new Date(state.lastPackTime + PACK_COOLDOWN_MS);
+    const remaining = (state.lastPackTime + PACK_COOLDOWN_MS()) - Date.now();
+    const nextDate = new Date(state.lastPackTime + PACK_COOLDOWN_MS());
 
     document.getElementById('countdown').textContent = formatDuration(remaining);
     document.getElementById('next-pack-date').textContent =
@@ -618,6 +645,7 @@ function sellSingleDuplicate(servantId) {
 
   let profit = 0;
   if (servant.rarity <= 3) profit = 2;
+  if (servant.rarity === 4) profit = 5;
   if (servant.rarity === 5) profit = 10;
 
   state.obtained[servantId]--;
@@ -641,6 +669,7 @@ function sellAllDuplicates() {
       let profitPerUnit = 0;
 
       if (servant.rarity <= 3) profitPerUnit = 2;
+      if (servant.rarity === 4) profitPerUnit = 5;
       if (servant.rarity === 5) profitPerUnit = 10;
 
       if (profitPerUnit > 0) {
@@ -652,7 +681,7 @@ function sellAllDuplicates() {
   });
 
   if (soldCount === 0) {
-    showToast('Nenhuma carta elegível (1-3★ ou 5★) para venda rápida.', 'error');
+    showToast('Nenhuma carta elegível (1-3★, 4★ ou 5★) para venda rápida.', 'error');
     return;
   }
 
@@ -769,7 +798,7 @@ class DinoGame {
 
     this.obstacles = [];
     this.spawnTimer = 0;
-    this.gameSpeed = 5.5;
+    this.gameSpeed = 7.5; // was 5.5 — harder start
 
     // Listeners handles
     this._keydownRef = this.handleKeyDown.bind(this);
@@ -780,13 +809,22 @@ class DinoGame {
     this.isRunning = true;
     window.addEventListener('keydown', this._keydownRef);
     this.canvas.addEventListener('click', this._touchRef);
+    this.canvas.addEventListener('touchstart', this._touchRef, { passive: false });
+    // Also listen on the wrapper for easier mobile tapping
+    const wrapper = document.getElementById('dino-canvas-wrapper');
+    if (wrapper) wrapper.addEventListener('touchstart', this._touchRef, { passive: false });
     this.loop();
   }
 
   stop() {
     this.isRunning = false;
     window.removeEventListener('keydown', this._keydownRef);
-    if (this.canvas) this.canvas.removeEventListener('click', this._touchRef);
+    if (this.canvas) {
+      this.canvas.removeEventListener('click', this._touchRef);
+      this.canvas.removeEventListener('touchstart', this._touchRef);
+    }
+    const wrapper = document.getElementById('dino-canvas-wrapper');
+    if (wrapper) wrapper.removeEventListener('touchstart', this._touchRef);
   }
 
   handleKeyDown(e) {
@@ -797,6 +835,7 @@ class DinoGame {
   }
 
   handleTouch(e) {
+    if (e.type === 'touchstart') e.preventDefault();
     if (this.player.isGrounded) {
       this.jump();
     }
@@ -860,11 +899,11 @@ class DinoGame {
     }
 
     // Dynamic difficulty speedup
-    this.gameSpeed += 0.0007;
+    this.gameSpeed += 0.0015; // was 0.0007 — faster ramp
 
     // Spawn Obstacles
     this.spawnTimer++;
-    if (this.spawnTimer > Math.max(50, 110 - this.gameSpeed * 2)) {
+    if (this.spawnTimer > Math.max(35, 90 - this.gameSpeed * 2)) { // tighter gaps
       if (Math.random() > 0.4) {
         // Randomly build narrow or high rectangular obstacles (magical energy pillars)
         const h = 30 + Math.random() * 35;
