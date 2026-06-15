@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chaldea Reader — FGO Story</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+  :root {
+    --gold:      #c9a84c;
+    --gold-dim:  #8a6d2f;
+    --ink:       #0d0c0a;
+    --parchment: #f5f0e8;
+    --parch2:    #ede5d3;
+    --crimson:   #8b1a1a;
+    --shadow:    rgba(0,0,0,0.55);
+    --panel-bg:  #141210;
+    --panel2:    #1e1b16;
+    --text-main: #e8dfc8;
+    --text-dim:  #9a9080;
+    --border:    #3a3328;
+    --accent:    #c9a84c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--ink);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(180deg, #080706 0%, #141210 100%);
+    border-bottom: 2px solid var(--gold-dim);
+    padding: 18px 28px 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px var(--shadow);
+  }
+  .logo-crest {
+    width: 44px; height: 44px;
+    background: radial-gradient(circle at 40% 35%, #c9a84c 0%, #6b4d1a 60%, #1a1208 100%);
+    border-radius: 50%;
+    border: 2px solid var(--gold-dim);
+    display: grid; place-items: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(201,168,76,0.3);
+  }
+  .header-titles h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.25rem;
+    color: var(--gold);
+    letter-spacing: .12em;
+    line-height: 1;
+  }
+  .header-titles p {
+    font-size: .8rem;
+    color: var(--text-dim);
+    letter-spacing: .06em;
+    margin-top: 2px;
+  }
+  .header-controls {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .region-btn {
+    font-family: 'Cinzel', serif;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all .2s;
+  }
+  .region-btn.active, .region-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(201,168,76,.08);
+  }
+  .font-size-ctrl { display: flex; gap: 4px; }
+  .font-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 28px; height: 28px;
+    cursor: pointer;
+    border-radius: 2px;
+    font-family: 'Cinzel', serif;
+    transition: all .2s;
+  }
+  .font-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── Layout ── */
+  .app {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  aside {
+    width: 280px;
+    min-width: 220px;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: width .3s;
+  }
+  aside.collapsed { width: 0; min-width: 0; }
+  .sidebar-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Cinzel', serif;
+    font-size: .78rem;
+    letter-spacing: .1em;
+    color: var(--gold);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toggle-sidebar {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dim); font-size: 1rem; margin-left: auto;
+    padding: 2px 4px;
+  }
+  .toggle-sidebar:hover { color: var(--gold); }
+
+  .war-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .war-list::-webkit-scrollbar { width: 4px; }
+  .war-list::-webkit-scrollbar-track { background: transparent; }
+  .war-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .war-group {}
+  .war-group-title {
+    font-family: 'Cinzel', serif;
+    font-size: .65rem;
+    letter-spacing: .14em;
+    color: var(--gold-dim);
+    padding: 12px 16px 4px;
+    text-transform: uppercase;
+    border-top: 1px solid var(--border);
+  }
+  .war-group:first-child .war-group-title { border-top: none; }
+  .war-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: .88rem;
+    color: var(--text-dim);
+    transition: all .15s;
+    line-height: 1.35;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .war-item:hover { background: rgba(201,168,76,.06); color: var(--text-main); }
+  .war-item.active {
+    background: rgba(201,168,76,.12);
+    color: var(--gold);
+    border-right: 2px solid var(--gold);
+  }
+  .war-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .war-item.active .war-dot { background: var(--gold); }
+
+  /* ── Quest panel (middle) ── */
+  .quest-panel {
+    width: 240px;
+    min-width: 180px;
+    background: var(--panel2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .quest-panel-header {
+    padding: 14px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Cinzel', serif;
+    font-size: .72rem;
+    letter-spacing: .1em;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+  }
+  .quest-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 0;
+  }
+  .quest-list::-webkit-scrollbar { width: 4px; }
+  .quest-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .quest-phase-group { margin-bottom: 4px; }
+  .quest-item {
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: .83rem;
+    color: var(--text-dim);
+    transition: all .15s;
+    line-height: 1.3;
+  }
+  .quest-item:hover { background: rgba(201,168,76,.06); color: var(--text-main); }
+  .quest-item.active {
+    background: rgba(201,168,76,.1);
+    color: var(--gold);
+    border-right: 2px solid var(--gold);
+  }
+  .quest-item .q-num {
+    font-size: .72rem;
+    color: var(--gold-dim);
+    font-family: 'Cinzel', serif;
+    display: block;
+    margin-bottom: 1px;
+  }
+  .phase-item {
+    padding: 4px 24px;
+    cursor: pointer;
+    font-size: .78rem;
+    color: var(--text-dim);
+    transition: all .15s;
+  }
+  .phase-item:hover { color: var(--gold); background: rgba(201,168,76,.04); }
+  .phase-item.active { color: var(--gold); }
+
+  /* ── Reader ── */
+  .reader {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background: #0f0e0c;
+    position: relative;
+  }
+  .reader::-webkit-scrollbar { width: 6px; }
+  .reader::-webkit-scrollbar-track { background: transparent; }
+  .reader::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .reader-empty {
+    margin: auto;
+    text-align: center;
+    padding: 48px 32px;
+    color: var(--text-dim);
+  }
+  .reader-empty .crest-big {
+    font-size: 4rem;
+    margin-bottom: 24px;
+    display: block;
+    opacity: .35;
+  }
+  .reader-empty h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    letter-spacing: .1em;
+    color: var(--gold-dim);
+    margin-bottom: 10px;
+  }
+  .reader-empty p { font-size: .88rem; line-height: 1.6; }
+
+  .script-header {
+    padding: 28px 40px 18px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(201,168,76,.04) 0%, transparent 100%);
+  }
+  .script-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    letter-spacing: .08em;
+    margin-bottom: 4px;
+  }
+  .script-header .meta {
+    font-size: .78rem;
+    color: var(--text-dim);
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .meta span { display: flex; align-items: center; gap: 4px; }
+
+  .script-content {
+    padding: 32px 40px 64px;
+    max-width: 780px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+  }
+  .script-content[data-fontsize="sm"] { font-size: .9rem; }
+  .script-content[data-fontsize="md"] { font-size: 1rem; }
+  .script-content[data-fontsize="lg"] { font-size: 1.12rem; }
+
+  /* ── Script lines ── */
+  .scene-break {
+    text-align: center;
+    margin: 32px 0 24px;
+    color: var(--gold-dim);
+    letter-spacing: .3em;
+    font-size: .8rem;
+    font-family: 'Cinzel', serif;
+    position: relative;
+  }
+  .scene-break::before, .scene-break::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 28%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim));
+  }
+  .scene-break::before { left: 0; }
+  .scene-break::after { right: 0; transform: scaleX(-1); }
+
+  .dialogue-block {
+    margin-bottom: 22px;
+  }
+  .speaker-name {
+    font-family: 'Cinzel', serif;
+    font-size: .78rem;
+    letter-spacing: .12em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .speaker-name::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+  .dialogue-text {
+    font-size: inherit;
+    line-height: 1.85;
+    color: var(--text-main);
+    padding-left: 12px;
+    border-left: 2px solid var(--border);
+  }
+  .dialogue-text.protagonist {
+    border-left-color: var(--crimson);
+    color: #e8c8c8;
+  }
+  .narrative-text {
+    font-style: italic;
+    color: var(--text-dim);
+    line-height: 1.8;
+    margin-bottom: 16px;
+    font-size: .94em;
+    padding: 10px 16px;
+    background: rgba(255,255,255,.02);
+    border-radius: 2px;
+  }
+  .choice-block {
+    margin: 20px 0;
+    padding: 14px 16px;
+    background: rgba(201,168,76,.04);
+    border: 1px solid var(--gold-dim);
+    border-radius: 2px;
+  }
+  .choice-label {
+    font-family: 'Cinzel', serif;
+    font-size: .7rem;
+    color: var(--gold-dim);
+    letter-spacing: .12em;
+    margin-bottom: 8px;
+  }
+  .choice-option {
+    padding: 6px 0;
+    color: var(--text-main);
+    font-size: .9em;
+    border-bottom: 1px solid var(--border);
+  }
+  .choice-option:last-child { border-bottom: none; }
+  .choice-option::before { content: '▷  '; color: var(--gold-dim); }
+
+  .bg-note {
+    display: inline-block;
+    font-size: .72rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin: 12px 0 6px;
+  }
+
+  /* ── Loading / Status ── */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13,12,10,.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 50;
+  }
+  .loading-overlay.hidden { display: none; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'Cinzel', serif;
+    font-size: .78rem;
+    letter-spacing: .14em;
+    color: var(--gold-dim);
+  }
+
+  .error-msg {
+    margin: 40px auto;
+    padding: 20px 24px;
+    background: rgba(139,26,26,.12);
+    border: 1px solid var(--crimson);
+    border-radius: 2px;
+    color: #e8a0a0;
+    font-size: .88rem;
+    max-width: 500px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* ── Translate bar ── */
+  .translate-bar {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(0deg, var(--panel-bg) 80%, transparent);
+    padding: 16px 40px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .translate-bar label {
+    font-family: 'Cinzel', serif;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+  }
+  .translate-bar select {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    font-size: .82rem;
+    padding: 5px 10px;
+    border-radius: 2px;
+    cursor: pointer;
+    outline: none;
+    font-family: 'EB Garamond', serif;
+  }
+  .translate-bar select:focus { border-color: var(--gold); }
+  .btn-translate {
+    font-family: 'Cinzel', serif;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    padding: 6px 18px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all .2s;
+  }
+  .btn-translate:hover { background: rgba(201,168,76,.1); border-color: var(--gold); }
+  .btn-translate:disabled { opacity: .4; cursor: default; }
+  .translate-note {
+    font-size: .75rem;
+    color: var(--text-dim);
+    margin-left: auto;
+  }
+
+  /* Progress */
+  .progress-bar-wrap {
+    height: 2px;
+    background: var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--crimson), var(--gold));
+    width: 0%;
+    transition: width .2s;
+  }
+
+  /* Sidebar toggle float btn */
+  .sidebar-toggle-float {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-left: none;
+    color: var(--text-dim);
+    width: 20px;
+    height: 40px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: .8rem;
+    z-index: 200;
+    border-radius: 0 4px 4px 0;
+  }
+  aside.collapsed ~ .sidebar-toggle-float { display: flex; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    aside { position: fixed; top: 80px; left: 0; bottom: 0; z-index: 150; }
+    .quest-panel { display: none; }
+    .translate-bar { padding: 12px 16px; }
+    .script-content { padding: 20px 18px 56px; }
+    .script-header { padding: 20px 18px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-crest">⚜</div>
+  <div class="header-titles">
+    <h1>Chaldea Reader</h1>
+    <p>Fate/Grand Order — Story Archive</p>
+  </div>
+  <div class="header-controls">
+    <div style="display:flex;gap:4px;">
+      <button class="region-btn active" data-region="NA" onclick="setRegion('NA',this)">NA</button>
+      <button class="region-btn" data-region="JP" onclick="setRegion('JP',this)">JP</button>
+    </div>
+    <div class="font-size-ctrl">
+      <button class="font-btn" onclick="changeFontSize(-1)" title="Diminuir fonte">A−</button>
+      <button class="font-btn" onclick="changeFontSize(1)" title="Aumentar fonte">A+</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      ⚔ Histórias
+      <button class="toggle-sidebar" onclick="toggleSidebar()" title="Fechar">✕</button>
+    </div>
+    <div class="war-list" id="warList">
+      <div style="padding:24px 16px;color:var(--text-dim);font-size:.82rem;text-align:center;">
+        Carregando histórias…
+      </div>
+    </div>
+  </aside>
+
+  <div class="quest-panel">
+    <div class="quest-panel-header" id="questPanelTitle">— Selecione uma guerra —</div>
+    <div class="quest-list" id="questList">
+    </div>
+  </div>
+
+  <div class="reader" id="reader">
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+    <div class="loading-overlay hidden" id="loadingOverlay">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loadingText">Carregando…</div>
+    </div>
+    <div class="reader-empty" id="readerEmpty">
+      <span class="crest-big">⚜</span>
+      <h2>Bem-vindo ao Chaldea Reader</h2>
+      <p>Selecione uma história no painel esquerdo para começar a leitura.<br>
+      As histórias são carregadas diretamente da API do Atlas Academy.</p>
+    </div>
+    <div id="readerContent" style="display:none;flex-direction:column;flex:1;"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──
+let region = 'NA';
+let allWars = [];
+let currentWar = null;
+let currentQuest = null;
+let fontSizeLevel = 1; // 0=sm,1=md,2=lg
+const fontSizes = ['sm','md','lg'];
+
+const API = () => `https://api.atlasacademy.io`;
+
+// ── Init ──
+async function init() {
+  await loadWars();
+  setupScrollProgress();
+}
+
+async function loadWars() {
+  try {
+    const res = await fetch(`${API()}/basic/${region}/war/all`);
+    const data = await res.json();
+    allWars = data.filter(w => w.id < 9999); // exclude temp events with huge IDs unless needed
+    renderWarList(data);
+  } catch(e) {
+    document.getElementById('warList').innerHTML = `<div class="error-msg">Erro ao carregar guerras: ${e.message}</div>`;
+  }
+}
+
+function renderWarList(wars) {
+  const groups = {
+    'Lostbelts': wars.filter(w => w.id >= 301 && w.id <= 399 && w.longName),
+    'Singularidades': wars.filter(w => w.id >= 100 && w.id <= 199 && w.longName),
+    'Prólogo / Epilogo': wars.filter(w => (w.id < 100) && w.longName),
+    'Eventos com História': wars.filter(w => w.id >= 200 && w.id !== 9999 && !((w.id >= 100 && w.id <= 399)) && w.longName),
+  };
+
+  // Fallback — group everything
+  const allNamed = wars.filter(w => w.longName || w.name);
+  if (!allNamed.length) {
+    document.getElementById('warList').innerHTML = '<div style="padding:16px;color:var(--text-dim);font-size:.82rem;">Nenhuma história encontrada.</div>';
+    return;
+  }
+
+  const mainStory = wars
+    .filter(w => (w.id >= 1 && w.id <= 4) || (w.id >= 100 && w.id <= 399))
+    .sort((a,b) => a.id - b.id);
+
+  const others = wars
+    .filter(w => !mainStory.includes(w) && (w.longName || w.name))
+    .sort((a,b) => a.id - b.id);
+
+  let html = '';
+
+  if (mainStory.length) {
+    html += `<div class="war-group"><div class="war-group-title">📖 História Principal</div>`;
+    for (const w of mainStory) {
+      const label = w.longName || w.name || `War #${w.id}`;
+      html += `<div class="war-item" data-id="${w.id}" onclick="selectWar(${w.id})">
+        <span class="war-dot"></span>${label}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  if (others.length) {
+    html += `<div class="war-group"><div class="war-group-title">⚔ Eventos / Outros</div>`;
+    for (const w of others.slice(0, 60)) {
+      const label = w.longName || w.name || `War #${w.id}`;
+      html += `<div class="war-item" data-id="${w.id}" onclick="selectWar(${w.id})">
+        <span class="war-dot"></span>${label}
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  document.getElementById('warList').innerHTML = html;
+}
+
+async function selectWar(warId) {
+  // Highlight sidebar
+  document.querySelectorAll('.war-item').forEach(el => {
+    el.classList.toggle('active', +el.dataset.id === warId);
+  });
+
+  showLoading('Carregando quests…');
+  const questPanel = document.getElementById('questList');
+  questPanel.innerHTML = '';
+  document.getElementById('questPanelTitle').textContent = '⏳ Carregando…';
+
+  try {
+    const res = await fetch(`${API()}/nice/${region}/war/${warId}`);
+    const war = await res.json();
+    currentWar = war;
+    document.getElementById('questPanelTitle').textContent = war.longName || war.name || `War ${warId}`;
+    renderQuestList(war);
+  } catch(e) {
+    questPanel.innerHTML = `<div style="padding:12px;color:#e8a0a0;font-size:.8rem;">Erro: ${e.message}</div>`;
+  }
+  hideLoading();
+}
+
+function renderQuestList(war) {
+  const questPanel = document.getElementById('questList');
+  const allQuests = (war.spots || []).flatMap(s => (s.quests || []).map(q => ({...q, spotName: s.name})));
+
+  // Sort by display order then id
+  allQuests.sort((a,b) => (a.priority || 0) - (b.priority || 0) || a.id - b.id);
+
+  if (!allQuests.length) {
+    questPanel.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:.8rem;">Nenhuma quest encontrada.</div>';
+    return;
+  }
+
+  // Group by spot
+  const bySpot = {};
+  for (const q of allQuests) {
+    if (!bySpot[q.spotName]) bySpot[q.spotName] = [];
+    bySpot[q.spotName].push(q);
+  }
+
+  let html = '';
+  for (const [spot, quests] of Object.entries(bySpot)) {
+    if (spot && spot !== 'Unknown') {
+      html += `<div style="padding:8px 14px 2px;font-size:.68rem;letter-spacing:.1em;color:var(--gold-dim);font-family:'Cinzel',serif;text-transform:uppercase;">${spot}</div>`;
+    }
+    for (const q of quests) {
+      const hasScript = q.phases && q.phases.length;
+      if (!hasScript) continue;
+      const label = q.name || `Quest #${q.id}`;
+      html += `<div class="quest-item" data-id="${q.id}" onclick="selectQuest(${q.id}, ${JSON.stringify(q.phases)})">
+        <span class="q-num">#${q.id}</span>${label}
+      </div>`;
+      if (q.phases && q.phases.length > 1) {
+        for (const ph of q.phases) {
+          html += `<div class="phase-item" data-qid="${q.id}" data-phase="${ph}" onclick="selectQuestPhase(${q.id}, ${ph}, event)">
+            Phase ${ph}
+          </div>`;
+        }
+      }
+    }
+  }
+
+  if (!html) {
+    questPanel.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:.8rem;">Nenhuma quest com script nesta guerra.</div>';
+    return;
+  }
+  questPanel.innerHTML = html;
+}
+
+async function selectQuest(questId, phases) {
+  const phase = phases && phases.length ? phases[0] : 1;
+  await loadQuestScript(questId, phase);
+}
+
+async function selectQuestPhase(questId, phase, e) {
+  e.stopPropagation();
+  await loadQuestScript(questId, phase);
+}
+
+async function loadQuestScript(questId, phase) {
+  document.querySelectorAll('.quest-item,.phase-item').forEach(el => {
+    const isQ = el.dataset.id == questId;
+    const isPh = el.dataset.qid == questId && el.dataset.phase == phase;
+    el.classList.toggle('active', isQ || isPh);
+  });
+
+  showLoading('Buscando scripts…');
+  hideEmpty();
+
+  try {
+    const res = await fetch(`${API()}/nice/${region}/quest/${questId}/${phase}?lang=en`);
+    const quest = await res.json();
+
+    // Gather all scripts
+    const scripts = [];
+    for (const stage of (quest.stages || [])) {
+      for (const script of (stage.scripts || [])) {
+        if (script.scriptId) scripts.push(script.scriptId);
+      }
+    }
+    // Also check quest scripts
+    for (const s of (quest.scripts || [])) {
+      if (s.scriptId) scripts.push(s.scriptId);
+    }
+    // Also from beforeActionValues
+    for (const bav of (quest.beforeActionValues || [])) {
+      if (bav.type === 'story' && bav.value) scripts.push(bav.value);
+    }
+
+    if (!scripts.length) {
+      showContent(`<div class="error-msg">Esta quest não possui scripts de história disponíveis.</div>`, quest, phase);
+      hideLoading();
+      return;
+    }
+
+    setLoading(`Carregando ${scripts.length} script(s)…`);
+
+    const scriptTexts = [];
+    for (const sid of [...new Set(scripts)]) {
+      try {
+        const r = await fetch(`${API()}/raw/${region}/script/${sid}`);
+        const text = await r.text();
+        scriptTexts.push({ id: sid, text });
+      } catch(_){}
+    }
+
+    const rendered = scriptTexts.map(s => parseScript(s.text, s.id)).join('');
+    showContent(rendered, quest, phase);
+
+  } catch(e) {
+    showContent(`<div class="error-msg">Erro ao carregar quest: ${e.message}</div>`, null, phase);
+  }
+  hideLoading();
+}
+
+// ── Script Parser ──
+function parseScript(raw, scriptId) {
+  const lines = raw.split('\n');
+  let html = `<div class="scene-break">✦ Script ${scriptId} ✦</div>`;
+  let i = 0;
+  let pendingBg = null;
+  let inChoice = false;
+  let choiceLines = [];
+
+  const flushChoice = () => {
+    if (!inChoice) return '';
+    let r = `<div class="choice-block"><div class="choice-label">◈ Escolha do Mestre</div>`;
+    for (const c of choiceLines) r += `<div class="choice-option">${escHtml(c)}</div>`;
+    r += `</div>`;
+    inChoice = false; choiceLines = [];
+    return r;
+  };
+
+  const isProtag = (name) => {
+    const n = (name||'').toLowerCase();
+    return n.includes('protagonist') || n.includes('master') || n === 'mc' || n === '主人公' || n === '主人公a' || n === '主人公b';
+  };
+
+  while (i < lines.length) {
+    const line = lines[i].trimEnd();
+
+    // Skip empty lines between blocks
+    if (!line.trim()) { i++; continue; }
+
+    // Commands / directives
+    if (line.startsWith('[')) {
+      html += flushChoice();
+      const cmd = line.replace(/[\[\]]/g,'').trim().toLowerCase();
+
+      // Background change
+      if (cmd.startsWith('bg ') || cmd.startsWith('background ')) {
+        const bgName = line.replace(/\[bg\s*/i,'').replace(/\[background\s*/i,'').replace(']','').trim();
+        pendingBg = bgName;
+        if (bgName) html += `<span class="bg-note">🌄 ${escHtml(bgName)}</span>`;
+      } else if (cmd === 'horizontalline' || cmd === 'hr' || cmd === 'sceneend') {
+        html += `<div class="scene-break">— ✦ —</div>`;
+      } else if (cmd.startsWith('select') || cmd.startsWith('choice')) {
+        inChoice = true;
+      }
+      i++; continue;
+    }
+
+    // Select options (lines starting with number + period inside choice context)
+    if (inChoice && /^\d+[\.\:]/.test(line.trim())) {
+      choiceLines.push(line.trim().replace(/^\d+[\.\:]\s*/,''));
+      i++; continue;
+    }
+
+    html += flushChoice();
+
+    // Character speech: "Name[id]\nSpeech" or "Name:\nSpeech"
+    // Atlas Academy scripts use format:
+    //   CharacterName[charId,faceId,...]
+    //   「Dialogue text」
+    // or: （Narration）
+    const charMatch = line.match(/^([^\[「」（）\n]+)(?:\[[^\]]*\])?\s*$/);
+    const dialogueNext = i + 1 < lines.length && (lines[i+1].startsWith('「') || lines[i+1].startsWith('"'));
+
+    if (charMatch && dialogueNext && charMatch[1].trim().length < 64 && !line.includes('＠') && !line.startsWith('＠')) {
+      const name = charMatch[1].trim();
+      i++;
+      let dialogueLines = [];
+      while (i < lines.length) {
+        const dl = lines[i];
+        if (dl.startsWith('「') || dl.startsWith('"') || (dialogueLines.length > 0 && !dl.startsWith('[') && dl.trim() && !dl.match(/^([^\[「」（）\n]+)(?:\[[^\]]*\])?\s*$/))) {
+          dialogueLines.push(dl.replace(/^「|」$/g,'').replace(/^"|"$/g,'').trim());
+          i++;
+        } else break;
+      }
+      const text = dialogueLines.join('<br>');
+      const isP = isProtag(name);
+      html += `<div class="dialogue-block">
+        <div class="speaker-name">${escHtml(name)}</div>
+        <div class="dialogue-text${isP ? ' protagonist' : ''}">${text}</div>
+      </div>`;
+      continue;
+    }
+
+    // Narration in （）
+    if (line.startsWith('（') || line.startsWith('(')) {
+      const text = line.replace(/^（|）$/g,'').replace(/^\(|\)$/g,'').trim();
+      html += `<div class="narrative-text">（${escHtml(text)}）</div>`;
+      i++; continue;
+    }
+
+    // Plain dialogue with 「」
+    if (line.startsWith('「') || line.startsWith('"')) {
+      const text = line.replace(/^「|」$/g,'').replace(/^"|"$/g,'').trim();
+      html += `<div class="dialogue-block">
+        <div class="dialogue-text">${escHtml(text)}</div>
+      </div>`;
+      i++; continue;
+    }
+
+    // Generic text line — treat as narrative
+    if (line.trim()) {
+      html += `<div class="narrative-text">${escHtml(line.trim())}</div>`;
+    }
+    i++;
+  }
+
+  html += flushChoice();
+  return html;
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── UI helpers ──
+function showContent(html, quest, phase) {
+  const rc = document.getElementById('readerContent');
+  rc.style.display = 'flex';
+  rc.innerHTML = `
+    <div class="script-header">
+      <h2>${quest ? escHtml(quest.name || 'Quest') : 'Script'}</h2>
+      <div class="meta">
+        ${quest ? `<span>📍 ${escHtml(quest.spotName || '')}</span>` : ''}
+        ${phase ? `<span>⚔ Phase ${phase}</span>` : ''}
+        <span>🌐 ${region}</span>
+      </div>
+    </div>
+    <div class="script-content" id="scriptContent" data-fontsize="${fontSizes[fontSizeLevel]}">${html}</div>
+    <div class="translate-bar">
+      <label>🌐 Traduzir:</label>
+      <select id="translateLang">
+        <option value="pt">Português</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="it">Italiano</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="zh-CN">中文 (简体)</option>
+        <option value="ar">العربية</option>
+        <option value="ru">Русский</option>
+      </select>
+      <button class="btn-translate" onclick="translateContent()">Traduzir via Google</button>
+      <span class="translate-note">Abre o Google Translate mantendo o layout</span>
+    </div>
+  `;
+  document.getElementById('readerEmpty').style.display = 'none';
+  rc.style.display = 'flex';
+  rc.style.flexDirection = 'column';
+}
+
+function hideEmpty() {
+  document.getElementById('readerEmpty').style.display = 'none';
+}
+
+function showLoading(msg) {
+  const ol = document.getElementById('loadingOverlay');
+  ol.classList.remove('hidden');
+  document.getElementById('loadingText').textContent = msg || 'Carregando…';
+}
+function setLoading(msg) {
+  document.getElementById('loadingText').textContent = msg;
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.add('hidden');
+}
+
+function translateContent() {
+  const sc = document.getElementById('scriptContent');
+  if (!sc) return;
+  const lang = document.getElementById('translateLang').value;
+  const text = sc.innerText;
+  const encoded = encodeURIComponent(text);
+  // Open Google Translate with the text — compatible approach
+  window.open(`https://translate.google.com/?sl=en&tl=${lang}&text=${encoded}&op=translate`, '_blank');
+}
+
+function setRegion(r, btn) {
+  region = r;
+  document.querySelectorAll('.region-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Reset
+  document.getElementById('warList').innerHTML = '<div style="padding:24px 16px;color:var(--text-dim);font-size:.82rem;text-align:center;">Carregando histórias…</div>';
+  document.getElementById('questList').innerHTML = '';
+  document.getElementById('questPanelTitle').textContent = '— Selecione uma guerra —';
+  document.getElementById('readerContent').style.display = 'none';
+  document.getElementById('readerEmpty').style.display = '';
+  loadWars();
+}
+
+function changeFontSize(dir) {
+  fontSizeLevel = Math.max(0, Math.min(2, fontSizeLevel + dir));
+  const sc = document.getElementById('scriptContent');
+  if (sc) sc.dataset.fontsize = fontSizes[fontSizeLevel];
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function setupScrollProgress() {
+  const reader = document.getElementById('reader');
+  const bar = document.getElementById('progressBar');
+  reader.addEventListener('scroll', () => {
+    const max = reader.scrollHeight - reader.clientHeight;
+    if (max <= 0) { bar.style.width = '0%'; return; }
+    bar.style.width = (reader.scrollTop / max * 100) + '%';
+  });
+}
+
+// ── Boot ──
+init();
+</script>
+</body>
+</html>
