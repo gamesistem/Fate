@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FGO Servant Sprite Downloader - Atlas Academy</title>
+    <style>
+        :root {
+            --bg-color: #12161a;
+            --card-bg: #1a2229;
+            --accent-color: #dfb86c;
+            --text-color: #f0f4f8;
+            --text-muted: #8a99a5;
+            --border-color: #2e3b4e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 20px;
+        }
+
+        header h1 {
+            color: var(--accent-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(223, 184, 108, 0.3);
+        }
+
+        header p {
+            color: var(--text-muted);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+        }
+
+        input, select {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input {
+            flex: 1;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 5px rgba(223, 184, 108, 0.5);
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .search-container {
+                flex-direction: column;
+            }
+        }
+
+        /* Lista de Servos */
+        .servants-sidebar {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .servant-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: background-color 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .servant-item:hover {
+            background-color: rgba(223, 184, 108, 0.1);
+        }
+
+        .servant-item.active {
+            background-color: rgba(223, 184, 108, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        .servant-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 50px;
+            background-color: #000;
+            object-fit: cover;
+            border: 1px solid var(--accent-color);
+        }
+
+        .servant-info h4 {
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .servant-info span {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: capitalize;
+        }
+
+        /* Visualizador de Sprites */
+        .sprite-viewer {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .placeholder-text {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 100px;
+            font-size: 1.2rem;
+        }
+
+        .servant-header-detail {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .servant-header-detail h2 {
+            color: var(--accent-color);
+        }
+
+        .sprite-section {
+            margin-bottom: 40px;
+        }
+
+        .sprite-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            border-left: 4px solid var(--accent-color);
+            padding-left: 10px;
+        }
+
+        .sprite-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .sprite-card {
+            background: #12161a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        .sprite-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-color);
+        }
+
+        .sprite-img-wrapper {
+            width: 100%;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: linear-gradient(45deg, #181f26 25%, transparent 25%), 
+                              linear-gradient(-45deg, #181f26 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #181f26 75%), 
+                              linear-gradient(-45deg, transparent 75%, #181f26 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .sprite-card img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .sprite-name {
+            font-size: 0.8rem;
+            color: var(--text-color);
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+
+        .btn-download {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .btn-download:hover {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        /* Carregamento */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>FGO Sprite Extractor</h1>
+        <p>Descarregue Sprites de Diálogo, Expressões e Rostos diretamente da API Atlas Academy (NA)</p>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="Procurar servo por nome... (Ex: Artoria, Gilgamesh)">
+        <select id="class-filter">
+            <option value="">Todas as Classes</option>
+            <option value="saber">Saber</option>
+            <option value="archer">Archer</option>
+            <option value="lancer">Lancer</option>
+            <option value="rider">Rider</option>
+            <option value="caster">Caster</option>
+            <option value="assassin">Assassin</option>
+            <option value="berserker">Berserker</option>
+            <option value="shielder">Shielder</option>
+            <option value="ruler">Ruler</option>
+            <option value="avenger">Avenger</option>
+            <option value="alterEgo">Alter Ego</option>
+            <option value="foreigner">Foreigner</option>
+            <option value="pretender">Pretender</option>
+        </select>
+    </div>
+
+    <div class="main-layout">
+        <div class="servants-sidebar" id="servants-list">
+            <div class="loading">A carregar servos da Atlas Academy...</div>
+        </div>
+
+        <div class="sprite-viewer" id="sprite-viewer">
+            <div class="placeholder-text">Selecione um servo na barra lateral para carregar os seus sprites de fala.</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://api.atlasacademy.io/export/NA/basic_servant.json';
+        
+        // CORREÇÃO AQUI: Alterado de '/info/' para '/nice/' para obter o ficheiro JSON da API
+        const DETAIL_API_URL = 'https://api.atlasacademy.io/nice/NA/servant/';
+        
+        let allServants = [];
+
+        // Inicializar aplicação ao carregar a página
+        document.addEventListener('DOMContentLoaded', fetchServants);
+        document.getElementById('search-input').addEventListener('input', filterServants);
+        document.getElementById('class-filter').addEventListener('change', filterServants);
+
+        // Procura a lista básica de todos os servos
+        async function fetchServants() {
+            try {
+                const response = await fetch(API_URL);
+                allServants = await response.json();
+                
+                // Ordenar por ID decrescente (Servos mais novos primeiro)
+                allServants.sort((a, b) => b.id - a.id);
+
+                renderServantList(allServants);
+            } catch (error) {
+                console.error("Erro ao carregar dados da API:", error);
+                document.getElementById('servants-list').innerHTML = `<div class="loading" style="color:red">Erro ao carregar os dados. Verifique a sua ligação.</div>`;
+            }
+        }
+
+        // Renderiza os servos na barra lateral
+        function renderServantList(servants) {
+            const listContainer = document.getElementById('servants-list');
+            listContainer.innerHTML = '';
+
+            if(servants.length === 0) {
+                listContainer.innerHTML = '<div class="loading">Nenhum servo encontrado.</div>';
+                return;
+            }
+
+            servants.forEach(servant => {
+                const item = document.createElement('div');
+                item.className = 'servant-item';
+                item.dataset.id = servant.id;
+                item.innerHTML = `
+                    <img class="servant-thumb" src="${servant.face}" alt="${servant.name}" onerror="this.src='https://via.placeholder.com/50/000/fff?text=FGO'">
+                    <div class="servant-info">
+                        <h4>${servant.name}</h4>
+                        <span>${servant.className} (ID: ${servant.id})</span>
+                    </div>
+                `;
+                item.addEventListener('click', () => loadServantSprites(servant.id, item));
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Filtra a lista em tempo real com base nos inputs
+        function filterServants() {
+            const searchValue = document.getElementById('search-input').value.toLowerCase();
+            const classValue = document.getElementById('class-filter').value.toLowerCase();
+
+            const filtered = allServants.filter(servant => {
+                const matchesName = servant.name.toLowerCase().includes(searchValue);
+                const matchesClass = classValue === "" || servant.className.toLowerCase() === classValue;
+                return matchesName && matchesClass;
+            });
+
+            renderServantList(filtered);
+        }
+
+        // Procura os detalhes completos de um servo específico para extrair os Assets de Diálogos
+        async function loadServantSprites(id, element) {
+            // Alterar classe ativa na barra lateral
+            document.querySelectorAll('.servant-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            const viewer = document.getElementById('sprite-viewer');
+            viewer.innerHTML = '<div class="loading">A carregar sprites detalhados...</div>';
+
+            try {
+                const response = await fetch(`${DETAIL_API_URL}${id}`);
+                const servantData = await response.json();
+
+                viewer.innerHTML = ''; // Limpar indicador de carregamento
+
+                // Cabeçalho com dados do servo selecionado
+                const header = document.createElement('div');
+                header.className = 'servant-header-detail';
+                header.innerHTML = `
+                    <img src="${servantData.extraAssets?.charaGraph?.ascension?.[1] || servantData.extraAssets?.faces?.ascension?.[1] || servantData.face}" style="height: 80px; border-radius: 8px; border: 1px solid var(--accent-color);">
+                    <div>
+                        <h2>${servantData.name}</h2>
+                        <p style="color: var(--text-muted)">Raridade: ${servantData.rarity} ★ | Classe: <span style="text-transform: capitalize;">${servantData.className}</span></p>
+                    </div>
+                `;
+                viewer.appendChild(header);
+
+                // Mapear as categorias de assets úteis para falas / Visual Novel
+                const assetCategories = [
+                    { title: "Sprites de Diálogos / Corpo Inteiro (Portraits)", data: servantData.extraAssets?.charaGraph?.status },
+                    { title: "Expressões Faciais (Close-up / Dialog Faces)", data: servantData.extraAssets?.story?.parts },
+                    { title: "Sprites Chibi / Eventos", data: servantData.extraAssets?.charaGraph?.ccy },
+                ];
+
+                let totalAssetsFound = 0;
+
+                assetCategories.forEach(category => {
+                    if (category.data && Object.keys(category.data).length > 0) {
+                        const section = document.createElement('div');
+                        section.className = 'sprite-section';
+                        section.innerHTML = `<h3>${category.title}</h3>`;
+
+                        const grid = document.createElement('div');
+                        grid.className = 'sprite-grid';
+
+                        // Iterar sobre as hiperligações das imagens da categoria
+                        Object.entries(category.data).forEach(([key, url]) => {
+                            // Validar se o link é uma imagem válida
+                            if (typeof url === 'string' && (url.startsWith('http'))) {
+                                totalAssetsFound++;
+                                const card = document.createElement('div');
+                                card.className = 'sprite-card';
+                                
+                                const filename = `${servantData.name.replace(/\s+/g, '_')}_${category.title.split(' ')[0]}_${key}.png`;
+
+                                card.innerHTML = `
+                                    <div class="sprite-img-wrapper">
+                                        <img src="${url}" loading="lazy" alt="Sprite FGO">
+                                    </div>
+                                    <div class="sprite-name">${key}</div>
+                                    <button class="btn-download" onclick="downloadImage('${url}', '${filename}')">Download</button>
+                                `;
+                                grid.appendChild(card);
+                            }
+                        });
+
+                        if (grid.children.length > 0) {
+                            section.appendChild(grid);
+                            viewer.appendChild(section);
+                        }
+                    }
+                });
+
+                if (totalAssetsFound === 0) {
+                    viewer.innerHTML += `<div class="placeholder-text">Nenhum asset de diálogo específico foi encontrado para esta personagem na API pública (Comum em NPCs ou Servos muito antigos).</div>`;
+                }
+
+            } catch (error) {
+                console.error("Erro ao carregar detalhes do servo:", error);
+                viewer.innerHTML = `<div class="loading" style="color:red">Erro ao carregar imagens deste servo.</div>`;
+            }
+        }
+
+        // Força o Download do ficheiro evitando abrir numa nova janela do navegador
+        async function downloadImage(url, filename) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                
+                // Limpeza da memória
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error("Falha ao descarregar imagem, a abrir em nova janela alternativa:", error);
+                window.open(url, '_blank');
+            }
+        }
+    </script>
+</body>
+</html>
